@@ -2,7 +2,17 @@
 // Robert Yang
 // Oct. 8, 2023
 //
-// This is a basic attempt at simulating three bodies. Discrete calculus breaks down at tiny distances, so it isn't really accurate as of now...
+// This is a basic attempt at simulating gravity. It uses the formula for
+// gravity between two objects and applies Newton's second law to get the
+// acceleration. This doesn't take into account change in time, the universal
+// gravitational constant, or actual units, so accel_scaling is used instead as
+// a placeholder proportionality constant.
+//
+// Note that calculations for position given acceleration and velocit relies on
+// discrete calculus, and this is not really accurate given the relatively
+// large value of delta-t compared to the possible small distances experienced
+// sometimes in the simulation. Thus, the balls can slingshot with an
+// unreasonably high velocity when they get too close.
 //
 // Extra for Experts:
 // - Lighting (mostly copied from the p5js tutorial page)
@@ -37,6 +47,14 @@ class Ball {
     this.mass = mass;
   }
 
+  /**
+   * Converts force to change in velocity using Newton's second law and 
+   *     accel_scaling.
+   * 
+   * @param {number} f_x x-component of the force
+   * @param {number} f_y y-component of the force
+   * @param {number} f_z z-component of the force
+   */
   act_force(f_x, f_y, f_z) {
     this.v_x += accel_scaling * f_x / this.mass;
     this.v_y += accel_scaling * f_y / this.mass;
@@ -54,14 +72,24 @@ class Ball {
   }
 }
 
+/**
+ * Takes two balls and acts the force of gravity upon them.
+ * @param {Ball} ball1 A ball to apply gravity to.
+ * @param {Ball} ball2 Another ball to apply gravity to.
+ */
 function apply_grav(ball1, ball2) {
+  // Get the displacement vector
   let d1 = createVector(ball1.x, ball1.y, ball1.z);
   let d2 = createVector(ball2.x, ball2.y, ball2.z);
   let disp = p5.Vector.sub(d2, d1);
   let dist = disp.mag();
   if(dist === 0) return;
   disp.normalize();
-  let gforce = ball1.mass * ball2.mass / dist**2; // Ignoring big G
+
+  // Calculates the gravitational force
+  let gforce = ball1.mass * ball2.mass / dist**2;
+
+  // Applies the force
   disp.setMag(gforce);
   ball1.act_force(disp.x, disp.y, disp.z);
   ball2.act_force(-disp.x, -disp.y, -disp.z);
@@ -119,6 +147,8 @@ function draw() {
     100,100,100, // color
     0, -1, -1  // direction
   );
+
+  // Handle eveything else
   handle_grav();
   draw_balls();
   destroy_far();
