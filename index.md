@@ -1,6 +1,6 @@
 # My CS30 Stuff
 
-## Demos
+## Class Demos
 
 - [Persistent Ball](01-ball)
 - [Ball Object Notation](02-ball-object)
@@ -8,3 +8,7 @@
 ## Projects
 
 - [Interactive Scene](2d-pool-ball)
+
+## Experiments
+
+- [First Attempts at 3D Rendering](3d-hello-world)
