@@ -13,7 +13,15 @@
 const accel_scaling = 5;
 //const bigG = 6.6743*10**(-15);
 
-const ball_radius = 3;
+const max_radius = 5;
+const max_pos = 50;
+const max_vel = 1;
+const max_mass = 30;
+const min_radius = 3;
+const min_mass = 20;
+
+const far_threshold = 1000;
+let num_balls;
 
 const balls = [];
 
@@ -73,14 +81,27 @@ function draw_balls() {
   }
 }
 
+function destroy_far() {
+  for(let i = 0; i < balls.length; i++) {
+    let ball = balls[i];
+    if(Math.sqrt(ball.x**2 + ball.y**2 + ball.z**2) > far_threshold) {
+      //ball.hide();
+      balls.splice(i, 1);
+    }
+  }
+}
+
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   //debugMode();
   camera(200,-40, 200);
   noStroke();
-  balls.push(new Ball(0, 10, 0, 3, 0, 0, ball_radius, 5));
-  balls.push(new Ball(0, -10, 0, -1, 0, 0, ball_radius, 15));
-  balls.push(new Ball(0, 0, 5, 0, 0, 3, ball_radius, 10));
+  num_balls = prompt("How many balls?", 3);
+  for(let i = 0; i < num_balls; i++) {
+    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
+      random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
+      random(min_radius, max_radius), random(min_mass, max_mass)));
+  }
 }
 
 function draw() {
@@ -100,4 +121,5 @@ function draw() {
   );
   handle_grav();
   draw_balls();
+  destroy_far();
 }
