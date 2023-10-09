@@ -9,7 +9,7 @@
 // a placeholder proportionality constant.
 //
 // Note that calculations for position given acceleration and velocit relies on
-// discrete calculus, and this is not really accurate given the relatively
+// discrete values, and this is not really accurate given the relatively
 // large value of delta-t compared to the possible small distances experienced
 // sometimes in the simulation. Thus, the balls can slingshot with an
 // unreasonably high velocity when they get too close.
@@ -20,20 +20,25 @@
 // - Vectors
 // - 3D of course!
 
-const accel_scaling = 5;
+const accel_scaling = 1;
 //const bigG = 6.6743*10**(-15);
 
 const max_radius = 5;
 const max_pos = 50;
 const max_vel = 1;
-const max_mass = 30;
+const max_mass = 300;
 const min_radius = 3;
-const min_mass = 20;
+const min_mass = 200;
+const force_limit = 150;
 
 const far_threshold = 1000;
 let num_balls;
 
+let debug_force_exceeded = false;
+
 const balls = [];
+
+let cam;
 
 class Ball {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
@@ -88,6 +93,10 @@ function apply_grav(ball1, ball2) {
 
   // Calculates the gravitational force
   let gforce = ball1.mass * ball2.mass / dist**2;
+  if(gforce > force_limit) {
+    debug_force_exceeded = true;
+    gforce = force_limit;
+  }
 
   // Applies the force
   disp.setMag(gforce);
@@ -122,7 +131,9 @@ function destroy_far() {
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   //debugMode();
-  camera(200,-40, 200);
+  cam = createCamera();
+  cam.setPosition(200, -40, 200);
+  cam.lookAt(0,0,0);
   noStroke();
   num_balls = prompt("How many balls?", 3);
   for(let i = 0; i < num_balls; i++) {
@@ -132,24 +143,39 @@ function setup() {
   }
 }
 
+function mousePressed() {
+  requestPointerLock();
+}
+
 function draw() {
-  background(220);
-
-  // Handle lighting
-  ambientLight(20);
+  debug_force_exceeded = false;
+  // // Handle lighting
+  // ambientLight(20);
   
-  directionalLight(
-    255,255,255, // color
-    -1, 1, 0  // direction
-  );
+  // directionalLight(
+  //   255,255,255, // color
+  //   -1, 1, 0  // direction
+  // );
 
-  directionalLight(
-    100,100,100, // color
-    0, -1, -1  // direction
-  );
+  // directionalLight(
+  //   100,100,100, // color
+  //   0, -1, -1  // direction
+  // );
+
+  // Handle camera
+  cam.pan(-movedX * 0.001);
+  cam.tilt(movedY * 0.001);
 
   // Handle eveything else
   handle_grav();
-  draw_balls();
   destroy_far();
+  if(debug_force_exceeded) {
+    //background(255);
+    background(220);
+  }
+  else {
+    background(220);
+  }
+  normalMaterial();
+  draw_balls();
 }
