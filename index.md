@@ -9,6 +9,7 @@
 ## Projects
 
 - [Interactive Scene](2d-pool-ball)
+- [Array Assignment: 3D n-Body Gravity Simulator](3d-n-body)
 
 ## Experiments
 
