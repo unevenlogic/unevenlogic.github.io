@@ -44,17 +44,21 @@ let cam;
 
 class Ball {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.v_x = v_x;
-    this.v_y = v_y;
-    this.v_z = v_z;
+    // this.x = x;
+    // this.y = y;
+    // this.z = z;
+    // this.v_x = v_x;
+    // this.v_y = v_y;
+    // this.v_z = v_z;
     this.r = r;
     this.mass = mass;
-    this.f_x_net = 0;
-    this.f_y_net = 0;
-    this.f_z_net = 0;
+    // this.f_x_net = 0;
+    // this.f_y_net = 0;
+    // this.f_z_net = 0;
+
+    this.pos = createVector(x, y, z);
+    this.vel = createVector(v_x, v_y, v_z);
+    this.f_net = createVector(0, 0, 0);
   }
 
   /**
@@ -65,27 +69,37 @@ class Ball {
    * @param {number} f_y y-component of the force
    * @param {number} f_z z-component of the force
    */
-  act_force(f_x, f_y, f_z) {
-    this.f_x_net += f_x;
-    this.f_y_net += f_y;
-    this.f_z_net += f_z;
+  act_force(f_applied) {
+    this.f_net.add(f_applied);
   }
+  // act_force(f_x, f_y, f_z) {
+  //   this.f_x_net += f_x;
+  //   this.f_y_net += f_y;
+  //   this.f_z_net += f_z;
+  // }
 
   /**
-   * Uses leapfrog integration to get a more accurate calculation
+   * Uses velocity Verlet integration to get a more accurate calculation
    */
   move() {
-    this.v_x += accel_scaling * f_x / this.mass;
-    this.v_y += accel_scaling * f_y / this.mass;
-    this.v_z += accel_scaling * f_z / this.mass;
-    this.x += this.v_x;
-    this.y += this.v_y;
-    this.z += this.v_z;
+    console.log(this.f_net);
+    this.vel.add(this.f_net.mult(accel_scaling / this.mass));
+    this.pos.add(this.vel);
+
+    this.f_net = createVector(0,0,0);
   }
+  // move() {
+  //   this.v_x += accel_scaling * f_x / this.mass;
+  //   this.v_y += accel_scaling * f_y / this.mass;
+  //   this.v_z += accel_scaling * f_z / this.mass;
+  //   this.x += this.v_x;
+  //   this.y += this.v_y;
+  //   this.z += this.v_z;
+  // }
 
   draw() {
     push();
-    translate(this.x, this.y, this.z);
+    translate(this.pos);
     sphere(this.r);
     pop();
   }
@@ -98,9 +112,7 @@ class Ball {
  */
 function apply_grav(ball1, ball2) {
   // Get the displacement vector
-  let d1 = createVector(ball1.x, ball1.y, ball1.z);
-  let d2 = createVector(ball2.x, ball2.y, ball2.z);
-  let disp = p5.Vector.sub(d2, d1);
+  let disp = p5.Vector.sub(ball2.pos, ball1.pos);
   let dist = disp.mag();
   if(dist === 0) {
     return;
@@ -116,8 +128,9 @@ function apply_grav(ball1, ball2) {
 
   // Applies the force
   disp.setMag(gforce);
-  ball1.act_force(disp.x, disp.y, disp.z);
-  ball2.act_force(-disp.x, -disp.y, -disp.z);
+  ball1.act_force(disp);
+  disp.mult(-1);
+  ball2.act_force(disp);
 }
 
 function handle_grav() {
@@ -125,6 +138,12 @@ function handle_grav() {
     for(let j = i + 1; j < balls.length; j++) {
       apply_grav(balls[i], balls[j]);
     }
+  }
+}
+
+function move_balls() {
+  for(let ball of balls) {
+    ball.move();
   }
 }
 
@@ -137,7 +156,7 @@ function draw_balls() {
 function destroy_far() {
   for(let i = 0; i < balls.length; i++) {
     let ball = balls[i];
-    if(Math.sqrt(ball.x**2 + ball.y**2 + ball.z**2) > far_threshold) {
+    if(ball.pos.mag() > far_threshold) {
       //ball.hide();
       balls.splice(i, 1);
     }
@@ -193,5 +212,6 @@ function draw() {
     background(220);
   }
   normalMaterial();
+  move_balls();
   draw_balls();
 }
