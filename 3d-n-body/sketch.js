@@ -22,13 +22,14 @@
 // - 3D of course!
 
 const accel_scaling = 1;
+const grav_scaling = 5000;
 //const bigG = 6.6743*10**(-15);
 
-const max_radius = 5;
+const max_radius = 10;
 const max_pos = 50;
-const max_vel = 1;
+const max_vel = 100;
 const max_mass = 300;
-const min_radius = 3;
+const min_radius = 7;
 const min_mass = 200;
 
 //const force_limit = 150;
@@ -59,6 +60,7 @@ class Ball {
     this.pos = createVector(x, y, z);
     this.vel = createVector(v_x, v_y, v_z);
     this.f_net = createVector(0, 0, 0);
+    this.accel = createVector(0, 0, 0);
   }
 
   /**
@@ -82,11 +84,23 @@ class Ball {
    * Uses velocity Verlet integration to get a more accurate calculation
    */
   move() {
-    console.log(this.f_net);
-    this.vel.add(this.f_net.mult(accel_scaling / this.mass));
-    this.pos.add(this.vel);
+    // console.log(this.f_net);
+    // this.vel.add(this.f_net.mult(accel_scaling / this.mass));
+    // this.pos.add(this.vel);
 
+    // this.f_net = createVector(0,0,0);
+
+    //this.accel = this.f_net.copy().mult(1 / this.mass);
+    console.log(this.accel);
+    this.pos.add(this.vel.copy().add(this.accel.copy().mult(deltaTime / 2000)).mult(deltaTime / 1000));
     this.f_net = createVector(0,0,0);
+  }
+
+  update() {
+    let new_accel = this.f_net.copy().mult(1 / this.mass);
+    this.vel.add(this.accel.copy().add(new_accel).mult(deltaTime / 2000));
+    this.f_net = createVector(0,0,0);
+    this.accel = new_accel;
   }
   // move() {
   //   this.v_x += accel_scaling * f_x / this.mass;
@@ -117,10 +131,13 @@ function apply_grav(ball1, ball2) {
   if(dist === 0) {
     return;
   }
+  else if(dist < ball1.r + ball2.r) {
+    return;
+  }
   disp.normalize();
 
   // Calculates the gravitational force
-  let gforce = ball1.mass * ball2.mass / dist**2;
+  let gforce = grav_scaling * ball1.mass * ball2.mass / dist**2;
   // if(gforce > force_limit) {
   //   debug_force_exceeded = true;
   //   gforce = force_limit;
@@ -144,6 +161,12 @@ function handle_grav() {
 function move_balls() {
   for(let ball of balls) {
     ball.move();
+  }
+}
+
+function update_balls() {
+  for(let ball of balls) {
+    ball.update();
   }
 }
 
@@ -171,11 +194,13 @@ function setup() {
   cam.lookAt(0,0,0);
   noStroke();
   num_balls = prompt("How many balls?", 3);
-  for(let i = 0; i < num_balls; i++) {
-    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
-      random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
-      random(min_radius, max_radius), random(min_mass, max_mass)));
-  }
+  // for(let i = 0; i < num_balls; i++) {
+  //   balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
+  //     random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
+  //     random(min_radius, max_radius), random(min_mass, max_mass)));
+  // }
+  balls.push(new Ball(150, 20, 150, 50, 0, 0, 1, 5));
+  balls.push(new Ball(150, 0, 150, -10, 0, 0, 2, 25));
 }
 
 function mousePressed() {
@@ -201,17 +226,21 @@ function draw() {
   cam.pan(-movedX * 0.001);
   cam.tilt(movedY * 0.001);
 
+  background(255);
+
   // Handle eveything else
-  handle_grav();
-  destroy_far();
-  if(debug_force_exceeded) {
-    //background(255);
-    background(220);
-  }
-  else {
-    background(220);
-  }
+  // destroy_far();
+  // if(debug_force_exceeded) {
+  //   //background(255);
+  //   background(220);
+  // }
+  // else {
+  //   background(220);
+  // }
   normalMaterial();
+  //handle_grav();
   move_balls();
+  handle_grav();
+  update_balls();
   draw_balls();
 }
