@@ -38,6 +38,7 @@ function draw() {
   background(220);
   image(spaceship, mouseX, mouseY, spaceship.width * shipScale, spaceship.height * shipScale);
   //showCannons();
+  
 }
 
 function mousePressed() {

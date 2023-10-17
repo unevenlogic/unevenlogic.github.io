@@ -16,21 +16,21 @@
 // unreasonably high velocity when they get too close.
 //
 // Extra for Experts:
-// - Lighting (mostly copied from the p5js tutorial page)
+// - Normal lighting (mostly copied from the p5js tutorial page)
 // - Gravity
 // - Vectors
-// - 3D of course!
+// - 3D
 
 const accel_scaling = 1;
 const grav_scaling = 5000;
 //const bigG = 6.6743*10**(-15);
 
 const max_radius = 10;
-const max_pos = 50;
-const max_vel = 100;
-const max_mass = 300;
+const max_pos = 100;
+const max_vel = 500;
+const max_mass = 3000;
 const min_radius = 7;
-const min_mass = 200;
+const min_mass = 2000;
 
 //const force_limit = 150;
 
@@ -120,11 +120,34 @@ class Ball {
 }
 
 /**
+ * Takes two balls which are close enough and merges them.
+ * @param {Ball} ball1 The first ball to merge
+ * @param {Ball} ball2 The second ball to merge
+ * @returns {Ball} The new ball.
+ */
+function merge(ball1, ball2) {
+  let netMass = ball1.mass + ball2.mass;
+  ball1.pos.mult(ball1.mass);
+  ball2.pos.mult(ball2.mass);
+  ball1.vel.mult(ball1.mass);
+  ball2.vel.mult(ball2.mass);
+  let newPos = ball1.pos.add(ball2.pos).mult(1/netMass);
+  let newVel = ball1.vel.add(ball2.vel).mult(1/netMass);
+  let newRad = pow(pow(ball1.r, 3) + pow(ball2.r, 3), 1/3);
+  let newBall = new Ball(0,0,0,0,0,0,newRad, netMass);
+  newBall.pos = newPos;
+  newBall.vel = newVel;
+  return newBall;
+}
+
+/**
  * Takes two balls and acts the force of gravity upon them.
  * @param {Ball} ball1 A ball to apply gravity to.
  * @param {Ball} ball2 Another ball to apply gravity to.
+ * @param {Number} i The index of the first ball.
+ * @param {Number} j The index of the second ball.
  */
-function apply_grav(ball1, ball2) {
+function apply_grav(ball1, ball2, i, j) {
   // Get the displacement vector
   let disp = p5.Vector.sub(ball2.pos, ball1.pos);
   let dist = disp.mag();
@@ -132,7 +155,9 @@ function apply_grav(ball1, ball2) {
     return;
   }
   else if(dist < ball1.r + ball2.r) {
-    return;
+    balls.splice(i, 1);
+    balls.splice(j-1, 1);
+    balls.push(merge(ball1, ball2));
   }
   disp.normalize();
 
@@ -153,7 +178,7 @@ function apply_grav(ball1, ball2) {
 function handle_grav() {
   for(let i = 0; i < balls.length; i++) {
     for(let j = i + 1; j < balls.length; j++) {
-      apply_grav(balls[i], balls[j]);
+      apply_grav(balls[i], balls[j], i, j);
     }
   }
 }
@@ -194,13 +219,13 @@ function setup() {
   cam.lookAt(0,0,0);
   noStroke();
   num_balls = prompt("How many balls?", 3);
-  // for(let i = 0; i < num_balls; i++) {
-  //   balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
-  //     random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
-  //     random(min_radius, max_radius), random(min_mass, max_mass)));
-  // }
-  balls.push(new Ball(150, 20, 150, 50, 0, 0, 1, 5));
-  balls.push(new Ball(150, 0, 150, -10, 0, 0, 2, 25));
+  for(let i = 0; i < num_balls; i++) {
+    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
+      random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
+      random(min_radius, max_radius), random(min_mass, max_mass)));
+  }
+  // balls.push(new Ball(150, 20, 150, 50, 0, 0, 1, 5));
+  // balls.push(new Ball(150, 0, 150, -10, 0, 0, 2, 25));
 }
 
 function mousePressed() {
