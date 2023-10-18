@@ -16,21 +16,27 @@
 // unreasonably high velocity when they get too close.
 //
 // Extra for Experts:
-// - Normal lighting (mostly copied from the p5js tutorial page)
+// - Ambient lighting
 // - Gravity
 // - Vectors
 // - 3D
 
 const accel_scaling = 1;
 const grav_scaling = 5000;
+
+const mass_temp_scaling = 0.1;
 //const bigG = 6.6743*10**(-15);
 
-const max_radius = 10;
-const max_pos = 100;
-const max_vel = 500;
-const max_mass = 3000;
-const min_radius = 7;
-const min_mass = 2000;
+const default_num_balls = 500;
+
+const max_radius = 6;
+const max_pos = 500;
+const max_vel = 1000;
+const max_mass = 300;
+const min_radius = 3;
+const min_mass = 200;
+
+const y_bias = 0.001;
 
 //const force_limit = 150;
 
@@ -52,6 +58,7 @@ class Ball {
     this.vel = createVector(v_x, v_y, v_z);
     this.f_net = createVector(0, 0, 0);
     this.accel = createVector(0, 0, 0);
+    this.col = getColour(this.mass * mass_temp_scaling);
   }
 
   /**
@@ -85,6 +92,8 @@ class Ball {
   draw() {
     push();
     translate(this.pos);
+    ambientMaterial(this.col);
+    console.log(this.col);
     sphere(this.r);
     pop();
   }
@@ -186,13 +195,13 @@ function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   //debugMode();
   cam = createCamera();
-  cam.setPosition(200, -40, 200);
+  cam.setPosition(500, -300, 500);
   cam.lookAt(0,0,0);
   noStroke();
-  num_balls = prompt("How many balls?", 3);
+  num_balls = prompt("How many balls?", default_num_balls);
   for(let i = 0; i < num_balls; i++) {
-    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos, max_pos), random(-max_pos, max_pos), 
-      random(-max_vel, max_vel), random(-max_vel, max_vel), random(-max_vel, max_vel),
+    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos * y_bias, max_pos * y_bias), random(-max_pos, max_pos), 
+      random(-max_vel, max_vel), random(-max_vel * y_bias, max_vel * y_bias), random(-max_vel, max_vel),
       random(min_radius, max_radius), random(min_mass, max_mass)));
   }
   // balls.push(new Ball(150, 20, 150, 50, 0, 0, 1, 5));
@@ -206,7 +215,7 @@ function mousePressed() {
 function draw() {
   debug_force_exceeded = false;
   // // Handle lighting
-  ambientLight(200);
+  ambientLight(255);
 
   // Handle camera
   cam.pan(-movedX * 0.001);
