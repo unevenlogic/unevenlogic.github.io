@@ -45,17 +45,8 @@ let cam;
 
 class Ball {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    // this.x = x;
-    // this.y = y;
-    // this.z = z;
-    // this.v_x = v_x;
-    // this.v_y = v_y;
-    // this.v_z = v_z;
     this.r = r;
     this.mass = mass;
-    // this.f_x_net = 0;
-    // this.f_y_net = 0;
-    // this.f_z_net = 0;
 
     this.pos = createVector(x, y, z);
     this.vel = createVector(v_x, v_y, v_z);
@@ -74,24 +65,12 @@ class Ball {
   act_force(f_applied) {
     this.f_net.add(f_applied);
   }
-  // act_force(f_x, f_y, f_z) {
-  //   this.f_x_net += f_x;
-  //   this.f_y_net += f_y;
-  //   this.f_z_net += f_z;
-  // }
 
   /**
    * Uses velocity Verlet integration to get a more accurate calculation
    */
   move() {
-    // console.log(this.f_net);
-    // this.vel.add(this.f_net.mult(accel_scaling / this.mass));
-    // this.pos.add(this.vel);
-
-    // this.f_net = createVector(0,0,0);
-
-    //this.accel = this.f_net.copy().mult(1 / this.mass);
-    console.log(this.accel);
+    //console.log(this.accel);
     this.pos.add(this.vel.copy().add(this.accel.copy().mult(deltaTime / 2000)).mult(deltaTime / 1000));
     this.f_net = createVector(0,0,0);
   }
@@ -102,14 +81,6 @@ class Ball {
     this.f_net = createVector(0,0,0);
     this.accel = new_accel;
   }
-  // move() {
-  //   this.v_x += accel_scaling * f_x / this.mass;
-  //   this.v_y += accel_scaling * f_y / this.mass;
-  //   this.v_z += accel_scaling * f_z / this.mass;
-  //   this.x += this.v_x;
-  //   this.y += this.v_y;
-  //   this.z += this.v_z;
-  // }
 
   draw() {
     push();
@@ -235,23 +206,13 @@ function mousePressed() {
 function draw() {
   debug_force_exceeded = false;
   // // Handle lighting
-  // ambientLight(20);
-  
-  // directionalLight(
-  //   255,255,255, // color
-  //   -1, 1, 0  // direction
-  // );
-
-  // directionalLight(
-  //   100,100,100, // color
-  //   0, -1, -1  // direction
-  // );
+  ambientLight(200);
 
   // Handle camera
   cam.pan(-movedX * 0.001);
   cam.tilt(movedY * 0.001);
 
-  background(255);
+  background(20);
 
   // Handle eveything else
   // destroy_far();
@@ -262,7 +223,7 @@ function draw() {
   // else {
   //   background(220);
   // }
-  normalMaterial();
+  //normalMaterial();
   //handle_grav();
   move_balls();
   handle_grav();
