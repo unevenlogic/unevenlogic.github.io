@@ -62,7 +62,6 @@ function getBlue(t) {
       return 0;
     }
     b = 138.5177312231 * log(b) - 305.0447927307;
-    //console.log(t);
     return enforceBounds(b);
   }
 }

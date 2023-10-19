@@ -33,11 +33,19 @@
 //   website:
 //   https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html.
 //
+// Controls:
+// - Input number of balls at beginning
+// - Press mouse to hide cursor (esc to show)
+// - Scroll up/down to increase/decrease speed
+// - WASD for horizontal movement, space/shift for vertical (like Minecraft)
+//
 // Extra for Experts:
 // - 3D via WEBGL
 // - Vectors
 // - Gravity
 // - Black body radiation ambient lighting
+// - Mouse locking and scrolling for speed control
+// - WASD for movement
 
 const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
@@ -61,6 +69,8 @@ const balls = [];
 
 // Camera object
 let cam;
+let cam_speed = 20; // Default speed of camera
+const cam_sprint = 100; // Max speed of camera
 
 /**
  * The ball gravitational object.
@@ -92,7 +102,6 @@ class Ball {
    * Updates the position of the ball; part of velocity Verlet integration
    */
   move() {
-    //console.log(this.accel);
     this.pos.add(this.vel.copy().add(this.accel.copy().mult(deltaTime / 2000)).mult(deltaTime / 1000));
     this.f_net = createVector(0,0,0);
   }
@@ -114,7 +123,6 @@ class Ball {
     push();
     translate(this.pos);
     ambientMaterial(this.col);
-    //console.log(this.col);
     sphere(this.r);
     pop();
   }
@@ -247,7 +255,48 @@ function setup() {
 }
 
 function mousePressed() {
-  requestPointerLock();
+  requestPointerLock(); // Hides the cursor
+}
+
+function mouseWheel(event) {
+  cam_speed -= event.delta / 100; // Change speed
+  if(cam_speed > cam_sprint) {
+    cam_speed = cam_sprint; // Speed limit
+  }
+  else if(cam_speed < 0) {
+    cam_speed = 0; // Nonnegative speed
+  }
+}
+
+function moveCamera() {
+  if(keyIsDown(87) || keyIsDown(83) || keyIsDown(65) || keyIsDown(68)) {
+    // Gets the orientation vector
+    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
+    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
+    let disp = centrePos.copy().sub(eyePos);
+    disp.y = 0;
+    disp.setMag(cam_speed);
+
+    // Handle right/left movement
+    let rightDisp = new p5.Vector(-disp.z, disp.y, disp.x);
+    let rightMult = keyIsDown(68) - keyIsDown(65);
+    rightDisp.mult(rightMult);
+    eyePos.add(rightDisp);
+
+    // Handle fowards/backwards movement
+    let forwardsMult = keyIsDown(87) - keyIsDown(83);
+    disp.mult(forwardsMult);
+    eyePos.add(disp);
+
+    // Sets the position
+    cam.setPosition(eyePos.x, eyePos.y, eyePos.z);
+  }
+  if(keyIsDown(32) && !keyIsDown(16)) { // Go up
+    cam.setPosition(cam.eyeX, cam.eyeY - cam_speed, cam.eyeZ);
+  }
+  else if(keyIsDown(16)) { // Go down
+    cam.setPosition(cam.eyeX, cam.eyeY + cam_speed, cam.eyeZ);
+  }
 }
 
 function draw() {
@@ -258,6 +307,7 @@ function draw() {
   // Handle camera
   cam.pan(-movedX * 0.001);
   cam.tilt(movedY * 0.001);
+  moveCamera();
 
   // Handle balls
   move_balls();
