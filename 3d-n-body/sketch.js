@@ -1,54 +1,70 @@
 /* eslint-disable no-undef */
-// First Attempts at 3D Rendering
+// 3D n-body Arrays Project
 // Robert Yang
-// Oct. 8, 2023
+// Oct. 19, 2023
 //
-// This is a basic attempt at simulating gravity. It uses the formula for
-// gravity between two objects and applies Newton's second law to get the
-// acceleration. This doesn't take into account change in time, the universal
-// gravitational constant, or actual units, so accel_scaling is used instead as
-// a placeholder proportionality constant.
-
-// Note that calculations for position given acceleration and velocit relies on
-// discrete values, and this is not really accurate given the relatively
+// This is a simulation of a given number of gravitational bodies interacting
+// in space. It uses the formula for gravity between two objects and applies
+// Newton's second law to ge tthe acceleration. This doesn't take into account
+// the actual units, so grav_scaling is used instead as a placeholder
+// proportionality constant.
+//
+// Note that calculations for position given acceleration and velocity relies
+// on discrete values, and this is not really accurate given the relatively
 // large value of delta-t compared to the possible small distances experienced
 // sometimes in the simulation. Thus, the balls can slingshot with an
-// unreasonably high velocity when they get too close.
+// unreasonably high velocity when they get too close. 
+//
+// This issue has been somewhat mitigated in two ways. First, velocity Verlet
+// integration is used instead of Euler integration. This makes the simulation
+// much more accurate, as the error is now proportional to the square of the
+// timestep. In addition, this is a sympletic integrator, which means that
+// the energy is (mostly) conserved long-term.
+//
+// Second, the balls now merge when they collide. This greatly reduces the rate
+// at which balls approach each other at near-zero distances and slingshot.
+// This merging system uses blackbody radiation to simulate stars merging. It
+// also relies on several assumptions:
+// - The temperature of the ball (in Kelvins) is proportional to its mass. This
+//   should mostly be true for main-sequence stars, which we assume here.
+// - The total volume is conserved upon merging. This is not accurate for stars
+//   but was easy enough to simulate.
+// - The temperature to colour conversion was based on code from the following
+//   website:
+//   https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html.
 //
 // Extra for Experts:
-// - Ambient lighting
-// - Gravity
+// - 3D via WEBGL
 // - Vectors
-// - 3D
+// - Gravity
+// - Black body radiation ambient lighting
 
-const accel_scaling = 1;
-const grav_scaling = 5000;
+const grav_scaling = 5000; // Gravity force scaling versus mass
+const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
-const mass_temp_scaling = 0.1;
-//const bigG = 6.6743*10**(-15);
+const default_num_balls = 500; // The default number of balls
+let num_balls; // The actual number of balls
 
-const default_num_balls = 500;
+const max_pos = 500; // Maximum cardinal displacement magnitude of balls
+const max_vel = 1000; // Maximum cardinal velocity magnitude of balls
+const min_radius = 3; // Minimum ball radius
+const max_radius = 6; // Maximum ball radius
+const min_mass = 200; // Minimum ball mass
+const max_mass = 300; // Maximum ball mass
 
-const max_radius = 6;
-const max_pos = 500;
-const max_vel = 1000;
-const max_mass = 300;
-const min_radius = 3;
-const min_mass = 200;
+// Decreases y-related parameters to make the simulation flatter and closer to
+// a real solar system; change this to 1 for unbiased 3D randomness
+const y_bias = 0.0001;
 
-const y_bias = 0.001;
-
-//const force_limit = 150;
-
-const far_threshold = 1000;
-let num_balls;
-
-let debug_force_exceeded = false;
-
+// Array of balls
 const balls = [];
 
+// Camera object
 let cam;
 
+/**
+ * The ball gravitational object.
+ */
 class Ball {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
     this.r = r;
@@ -58,23 +74,22 @@ class Ball {
     this.vel = createVector(v_x, v_y, v_z);
     this.f_net = createVector(0, 0, 0);
     this.accel = createVector(0, 0, 0);
+
+    // Uses blackbody radiation to get the colour; see blackbody.js
     this.col = getColour(this.mass * mass_temp_scaling);
   }
 
   /**
-   * Converts force to change in velocity using Newton's second law and 
-   *     accel_scaling.
+   * Converts force to change in velocity using Newton's second law.
    * 
-   * @param {number} f_x x-component of the force
-   * @param {number} f_y y-component of the force
-   * @param {number} f_z z-component of the force
+   * @param {p5.Vector} f_applied The force
    */
   act_force(f_applied) {
     this.f_net.add(f_applied);
   }
 
   /**
-   * Uses velocity Verlet integration to get a more accurate calculation
+   * Updates the position of the ball; part of velocity Verlet integration
    */
   move() {
     //console.log(this.accel);
@@ -82,6 +97,9 @@ class Ball {
     this.f_net = createVector(0,0,0);
   }
 
+  /**
+   * Updates the velocity of the ball; part of velocity Verlet integration
+   */
   update() {
     let new_accel = this.f_net.copy().mult(1 / this.mass);
     this.vel.add(this.accel.copy().add(new_accel).mult(deltaTime / 2000));
@@ -89,11 +107,14 @@ class Ball {
     this.accel = new_accel;
   }
 
+  /**
+   * Renders the ball.
+   */
   draw() {
     push();
     translate(this.pos);
     ambientMaterial(this.col);
-    console.log(this.col);
+    //console.log(this.col);
     sphere(this.r);
     pop();
   }
@@ -106,14 +127,25 @@ class Ball {
  * @returns {Ball} The new ball.
  */
 function merge(ball1, ball2) {
-  let netMass = ball1.mass + ball2.mass;
+  let netMass = ball1.mass + ball2.mass; // Combined mass
+
+  // Multiplies positions and velocities by masses in preparation for centre of
+  // mass and momentum calculations
   ball1.pos.mult(ball1.mass);
   ball2.pos.mult(ball2.mass);
   ball1.vel.mult(ball1.mass);
   ball2.vel.mult(ball2.mass);
+
+  // Centre of mass
   let newPos = ball1.pos.add(ball2.pos).mult(1/netMass);
+
+  // Conservation of momentum
   let newVel = ball1.vel.add(ball2.vel).mult(1/netMass);
+
+  // Conservation of volume (not realistic)
   let newRad = pow(pow(ball1.r, 3) + pow(ball2.r, 3), 1/3);
+
+  // Creates the new ball with the updated parameters
   let newBall = new Ball(0,0,0,0,0,0,newRad, netMass);
   newBall.pos = newPos;
   newBall.vel = newVel;
@@ -131,22 +163,19 @@ function apply_grav(ball1, ball2, i, j) {
   // Get the displacement vector
   let disp = p5.Vector.sub(ball2.pos, ball1.pos);
   let dist = disp.mag();
-  if(dist === 0) {
-    return;
-  }
-  else if(dist < ball1.r + ball2.r) {
+
+  // Checks if the balls need to be merged
+  if(dist === 0 || dist < ball1.r + ball2.r) {
     balls.splice(i, 1);
     balls.splice(j-1, 1);
     balls.push(merge(ball1, ball2));
   }
-  disp.normalize();
+
+  // Normalize the vector (not needed due to setMag)
+  //disp.normalize();
 
   // Calculates the gravitational force
   let gforce = grav_scaling * ball1.mass * ball2.mass / dist**2;
-  // if(gforce > force_limit) {
-  //   debug_force_exceeded = true;
-  //   gforce = force_limit;
-  // }
 
   // Applies the force
   disp.setMag(gforce);
@@ -155,6 +184,9 @@ function apply_grav(ball1, ball2, i, j) {
   ball2.act_force(disp);
 }
 
+/**
+ * Applies gravity to every unordered pair of balls.
+ */
 function handle_grav() {
   for(let i = 0; i < balls.length; i++) {
     for(let j = i + 1; j < balls.length; j++) {
@@ -163,49 +195,55 @@ function handle_grav() {
   }
 }
 
+/**
+ * Sets the new position of each ball.
+ */
 function move_balls() {
   for(let ball of balls) {
     ball.move();
   }
 }
 
+/**
+ * Sets the new velocity of each ball.
+ */
 function update_balls() {
   for(let ball of balls) {
     ball.update();
   }
 }
 
+/**
+ * Draws each ball.
+ */
 function draw_balls() {
   for(let ball of balls) {
     ball.draw();
   }
 }
 
-function destroy_far() {
-  for(let i = 0; i < balls.length; i++) {
-    let ball = balls[i];
-    if(ball.pos.mag() > far_threshold) {
-      //ball.hide();
-      balls.splice(i, 1);
-    }
-  }
-}
-
 function setup() {
+  // Create canvas
   createCanvas(windowWidth, windowHeight, WEBGL);
-  //debugMode();
+  noStroke();
+
+  // Create camera
   cam = createCamera();
   cam.setPosition(500, -300, 500);
   cam.lookAt(0,0,0);
-  noStroke();
+
+  // Create balls
   num_balls = prompt("How many balls?", default_num_balls);
   for(let i = 0; i < num_balls; i++) {
-    balls.push(new Ball(random(-max_pos, max_pos), random(-max_pos * y_bias, max_pos * y_bias), random(-max_pos, max_pos), 
-      random(-max_vel, max_vel), random(-max_vel * y_bias, max_vel * y_bias), random(-max_vel, max_vel),
-      random(min_radius, max_radius), random(min_mass, max_mass)));
+    balls.push(new Ball(random(-max_pos, max_pos),
+      random(-max_pos * y_bias, max_pos * y_bias),
+      random(-max_pos, max_pos),
+      random(-max_vel, max_vel),
+      random(-max_vel * y_bias, max_vel * y_bias),
+      random(-max_vel, max_vel),
+      random(min_radius, max_radius),
+      random(min_mass, max_mass)));
   }
-  // balls.push(new Ball(150, 20, 150, 50, 0, 0, 1, 5));
-  // balls.push(new Ball(150, 0, 150, -10, 0, 0, 2, 25));
 }
 
 function mousePressed() {
@@ -213,27 +251,15 @@ function mousePressed() {
 }
 
 function draw() {
-  debug_force_exceeded = false;
-  // // Handle lighting
+  // Handle lighting
+  background(20);
   ambientLight(255);
 
   // Handle camera
   cam.pan(-movedX * 0.001);
   cam.tilt(movedY * 0.001);
 
-  background(20);
-
-  // Handle eveything else
-  // destroy_far();
-  // if(debug_force_exceeded) {
-  //   //background(255);
-  //   background(220);
-  // }
-  // else {
-  //   background(220);
-  // }
-  //normalMaterial();
-  //handle_grav();
+  // Handle balls
   move_balls();
   handle_grav();
   update_balls();
