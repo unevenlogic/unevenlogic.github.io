@@ -71,6 +71,22 @@ const balls = [];
 let cam;
 let cam_speed = 20; // Default speed of camera
 const cam_sprint = 100; // Max speed of camera
+const mouse_sensitivity = 0.001; // Mouse sensitivity for camera
+
+// Initial position
+const cam_init_x = 500;
+const cam_init_y = -300;
+const cam_init_z = 500;
+
+
+// Introductory text
+let intro_text = `To move in the simulation:
+- WASD for horizontal movement
+- Space/shift to go up/down
+- Mouse to look around
+- Scroll up/down to increase/decrease speed
+
+How many balls?`;
 
 /**
  * The ball gravitational object.
@@ -237,11 +253,11 @@ function setup() {
 
   // Create camera
   cam = createCamera();
-  cam.setPosition(500, -300, 500);
+  cam.setPosition(cam_init_x, cam_init_y, cam_init_z);
   cam.lookAt(0,0,0);
 
   // Create balls
-  num_balls = prompt("How many balls?", default_num_balls);
+  num_balls = prompt(intro_text, default_num_balls);
   for(let i = 0; i < num_balls; i++) {
     balls.push(new Ball(random(-max_pos, max_pos),
       random(-max_pos * y_bias, max_pos * y_bias),
@@ -305,8 +321,8 @@ function draw() {
   ambientLight(255);
 
   // Handle camera
-  cam.pan(-movedX * 0.001);
-  cam.tilt(movedY * 0.001);
+  cam.pan(-movedX * mouse_sensitivity);
+  cam.tilt(movedY * mouse_sensitivity);
   moveCamera();
 
   // Handle balls
