@@ -15,7 +15,7 @@
 // Note that calculations for position given acceleration and velocity relies
 // on discrete values, and this is not really accurate given the relatively
 // large value of delta-t compared to the possible small distances experienced
-// sometimes in the simulation. Thus, the balls can slingshot with an
+// sometimes in the simulation. Thus, the bodies can slingshot with an
 // unreasonably high velocity when they get too close. 
 //
 // This issue has been somewhat mitigated in two ways. First, velocity Verlet
@@ -24,11 +24,11 @@
 // timestep. In addition, this is a sympletic integrator, which means that
 // the energy is (mostly) conserved long-term.
 //
-// Second, the balls now merge when they collide. This greatly reduces the rate
-// at which balls approach each other at near-zero distances and slingshot.
+// Second, the bodies now merge when they collide. This greatly reduces the rate
+// at which bodies approach each other at near-zero distances and slingshot.
 // This merging system uses blackbody radiation to simulate stars merging. It
 // also relies on several assumptions:
-// - The temperature of the ball (in Kelvins) is proportional to its mass. This
+// - The temperature of the body (in Kelvins) is proportional to its mass. This
 //   should mostly be true for main-sequence stars, which we assume here.
 // - The total volume is conserved upon merging. This is not accurate for stars
 //   but was easy enough to simulate.
@@ -37,7 +37,7 @@
 //   https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html.
 //
 // Controls:
-// - Input number of balls at beginning
+// - Input number of bodies at beginning
 // - Press mouse to hide cursor (esc to show)
 // - Scroll up/down to increase/decrease speed
 // - WASD for horizontal movement, space/shift for vertical (like Minecraft)
@@ -54,32 +54,35 @@
 const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
-const default_num_balls = 1; // The default number of balls
-let num_balls; // The actual number of balls
+const default_num_bodies = 1; // The default number of bodies
+let num_bodies; // The actual number of bodies
 
-const max_pos = 0; // Maximum cardinal displacement magnitude of balls
-const max_vel = 0; // Maximum cardinal velocity magnitude of balls
-const min_radius = 20; // Minimum ball radius
-const max_radius = 20; // Maximum ball radius
-const min_mass = 300; // Minimum ball mass
-const max_mass = 300; // Maximum ball mass
+const max_pos = 0; // Maximum cardinal displacement magnitude of bodies
+const max_vel = 0; // Maximum cardinal velocity magnitude of bodies
+const min_radius = 20; // Minimum body radius
+const max_radius = 20; // Maximum body radius
+const min_mass = 300; // Minimum body mass
+const max_mass = 300; // Maximum body mass
 
 // Decreases y-related parameters to make the simulation flatter and closer to
 // a real solar system; change this to 1 for unbiased 3D randomness
 const y_bias = 0.0001;
 
-// Array of balls
-const balls = [];
+// Array of bodies
+const bodies = [];
 
 // Camera object
 let cam;
 let cam_speed = 20; // Default speed of camera
 const cam_sprint = 100; // Max speed of camera
 
+// Player
+let thruster_strength = 0.0001;
+
 /**
- * The ball gravitational object.
+ * The body gravitational object.
  */
-class Ball {
+class Body {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
     this.r = r;
     this.mass = mass;
@@ -88,8 +91,6 @@ class Ball {
     this.vel = createVector(v_x, v_y, v_z);
     this.f_net = createVector(0, 0, 0);
     this.accel = createVector(0, 0, 0);
-
-    this.col = color(10, 20, 116);
   }
 
   /**
@@ -99,10 +100,11 @@ class Ball {
    */
   act_force(f_applied) {
     this.f_net.add(f_applied);
+    console.log(f_applied.mag());
   }
 
   /**
-   * Updates the position of the ball; part of velocity Verlet integration
+   * Updates the position of the body; part of velocity Verlet integration
    */
   move() {
     this.pos.add(this.vel.copy().add(this.accel.copy().mult(deltaTime / 2000)).mult(deltaTime / 1000));
@@ -110,7 +112,7 @@ class Ball {
   }
 
   /**
-   * Updates the velocity of the ball; part of velocity Verlet integration
+   * Updates the velocity of the body; part of velocity Verlet integration
    */
   update() {
     let new_accel = this.f_net.copy().mult(1 / this.mass);
@@ -118,9 +120,16 @@ class Ball {
     this.f_net = createVector(0,0,0);
     this.accel = new_accel;
   }
+}
+
+class Planet extends Body {
+  constructor(x, y, z, v_x, v_y, v_z, r, mass, col) {
+    super(x, y, z, v_x, v_y, v_z, r, mass);
+    this.col = col;
+  }
 
   /**
-   * Renders the ball.
+   * Renders the body.
    */
   draw() {
     push();
@@ -133,111 +142,137 @@ class Ball {
   }
 }
 
-class PlayerBall extends Ball {
+class Player extends Body {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    super(x, y, z, v_x, v_y, v_z, r, mass);
+    super(x, y, z, v_x, v_y, v_z, 0, mass);
+  }
+
+  /**
+   * Renders the body.
+   */
+  draw() {
+    push();
+    translate(this.pos);
+
+    //specularMaterial(50);
+    //shininess(10);
+    //ambientMaterial(this.col);
+    //(this.r);
+    pop();
   }
 }
 
 /**
- * Takes two balls which are close enough and merges them.
- * @param {Ball} ball1 The first ball to merge
- * @param {Ball} ball2 The second ball to merge
- * @returns {Ball} The new ball.
+ * Takes two bodies which are close enough and merges them.
+ * @param {Body} body1 The first body to merge
+ * @param {Body} body2 The second body to merge
+ * @returns {Body} The new body.
  */
-function merge(ball1, ball2) {
-  let netMass = ball1.mass + ball2.mass; // Combined mass
+function merge(body1, body2) {
+  let netMass = body1.mass + body2.mass; // Combined mass
 
   // Multiplies positions and velocities by masses in preparation for centre of
   // mass and momentum calculations
-  ball1.pos.mult(ball1.mass);
-  ball2.pos.mult(ball2.mass);
-  ball1.vel.mult(ball1.mass);
-  ball2.vel.mult(ball2.mass);
+  body1.pos.mult(body1.mass);
+  body2.pos.mult(body2.mass);
+  body1.vel.mult(body1.mass);
+  body2.vel.mult(body2.mass);
 
   // Centre of mass
-  let newPos = ball1.pos.add(ball2.pos).mult(1/netMass);
+  let newPos = body1.pos.add(body2.pos).mult(1/netMass);
 
   // Conservation of momentum
-  let newVel = ball1.vel.add(ball2.vel).mult(1/netMass);
+  let newVel = body1.vel.add(body2.vel).mult(1/netMass);
 
   // Conservation of volume (not realistic)
-  let newRad = pow(pow(ball1.r, 3) + pow(ball2.r, 3), 1/3);
+  let newRad = pow(pow(body1.r, 3) + pow(body2.r, 3), 1/3);
 
-  // Creates the new ball with the updated parameters
-  let newBall = new Ball(0,0,0,0,0,0,newRad, netMass);
-  newBall.pos = newPos;
-  newBall.vel = newVel;
-  return newBall;
+  // Creates the new body with the updated parameters
+  let newBody = new Body(0,0,0,0,0,0,newRad, netMass);
+  newBody.pos = newPos;
+  newBody.vel = newVel;
+  return newBody;
 }
 
 /**
- * Takes two balls and acts the force of gravity upon them.
- * @param {Ball} ball1 A ball to apply gravity to.
- * @param {Ball} ball2 Another ball to apply gravity to.
- * @param {Number} i The index of the first ball.
- * @param {Number} j The index of the second ball.
+ * Takes two bodies and acts the force of gravity upon them.
+ * @param {Body} body1 A body to apply gravity to.
+ * @param {Body} body2 Another body to apply gravity to.
+ * @param {Number} i The index of the first body.
+ * @param {Number} j The index of the second body.
  */
-function apply_grav(ball1, ball2, i, j) {
+function apply_grav(body1, body2, i, j) {
   // Get the displacement vector
-  let disp = p5.Vector.sub(ball2.pos, ball1.pos);
+  let disp = p5.Vector.sub(body2.pos, body1.pos);
   let dist = disp.mag();
 
-  // Checks if the balls need to be merged
-  if(dist === 0 || dist < ball1.r + ball2.r) {
-    balls.splice(i, 1);
-    balls.splice(j-1, 1);
-    balls.push(merge(ball1, ball2));
+  // Checks if the bodies need to be merged
+  if(dist === 0 || dist < body1.r + body2.r) {
+    bodies.splice(i, 1);
+    bodies.splice(j-1, 1);
+    bodies.push(merge(body1, body2));
   }
 
   // Normalize the vector (not needed due to setMag)
   //disp.normalize();
 
   // Calculates the gravitational force
-  let gforce = grav_scaling * ball1.mass * ball2.mass / dist**2;
+  let gforce = grav_scaling * body1.mass * body2.mass / dist**2;
 
   // Applies the force
   disp.setMag(gforce);
-  ball1.act_force(disp);
+  body1.act_force(disp);
   disp.mult(-1);
-  ball2.act_force(disp);
+  body2.act_force(disp);
+}
+
+function apply_thrust() {
+  if (keyIsDown(32)) {
+    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
+    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
+    let disp = centrePos.copy().sub(eyePos);
+    //disp.y = 0;
+    disp.setMag(thruster_strength);
+    playerbody.act_force(disp);
+    //console.log(disp.mag());
+  }
 }
 
 /**
- * Applies gravity to every unordered pair of balls.
+ * Applies gravity to every unordered pair of bodies.
  */
 function handle_grav() {
-  for(let i = 0; i < balls.length; i++) {
-    for(let j = i + 1; j < balls.length; j++) {
-      apply_grav(balls[i], balls[j], i, j);
+  for(let i = 0; i < bodies.length; i++) {
+    for(let j = i + 1; j < bodies.length; j++) {
+      apply_grav(bodies[i], bodies[j], i, j);
     }
   }
 }
 
 /**
- * Sets the new position of each ball.
+ * Sets the new position of each body.
  */
-function move_balls() {
-  for(let ball of balls) {
-    ball.move();
+function move_bodies() {
+  for(let body of bodies) {
+    body.move();
   }
 }
 
 /**
- * Sets the new velocity of each ball.
+ * Sets the new velocity of each body.
  */
-function update_balls() {
-  for(let ball of balls) {
-    ball.update();
+function update_bodies() {
+  for(let body of bodies) {
+    body.update();
   }
 }
 
 /**
- * Draws each ball.
+ * Draws each body.
  */
-function draw_balls() {
-  for(let ball of balls) {
-    ball.draw();
+function draw_bodies() {
+  for(let body of bodies) {
+    body.draw();
   }
 }
 
@@ -251,20 +286,26 @@ function setup() {
   cam.setPosition(0, 0, 80);
   cam.lookAt(0,0,0);
 
-  // Create balls
-  num_balls = default_num_balls; // prompt("How many balls?", default_num_balls);
-  for(let i = 0; i < num_balls; i++) {
-    balls.push(new Ball(random(-max_pos, max_pos),
-      random(-max_pos * y_bias, max_pos * y_bias),
-      random(-max_pos, max_pos),
-      random(-max_vel, max_vel),
-      random(-max_vel * y_bias, max_vel * y_bias),
-      random(-max_vel, max_vel),
-      random(min_radius, max_radius),
-      random(min_mass, max_mass)));
-  }
-  playerball = new PlayerBall(0,0,150,100,0,0,3,0.00001);
-  balls.push(playerball);
+  // Create bodies
+  num_bodies = default_num_bodies; // prompt("How many bodies?", default_num_bodies);
+  // for(let i = 0; i < num_bodies; i++) {
+  //   bodies.push(new Planet(random(-max_pos, max_pos),
+  //     random(-max_pos * y_bias, max_pos * y_bias),
+  //     random(-max_pos, max_pos),
+  //     random(-max_vel, max_vel),
+  //     random(-max_vel * y_bias, max_vel * y_bias),
+  //     random(-max_vel, max_vel),
+  //     random(min_radius, max_radius),
+  //     random(min_mass, max_mass)));
+  // }
+
+  // Creates Earth
+  bodies.push(new Planet(0,0,0,
+    0,0,0,
+    20, 300,
+    color(10, 20, 116)));
+  playerbody = new Player(0,0,150,100,0,0,3,0.00001);
+  bodies.push(playerbody);
 }
 
 function mousePressed() {
@@ -310,7 +351,7 @@ function moveCamera() {
   else if(keyIsDown(16)) { // Go down
     cam.setPosition(cam.eyeX, cam.eyeY + cam_speed, cam.eyeZ);
   }*/
-  cam.setPosition(playerball.pos.x, playerball.pos.y, playerball.pos.z);
+  cam.setPosition(playerbody.pos.x, playerbody.pos.y, playerbody.pos.z);
 }
 
 function draw() {
@@ -324,9 +365,12 @@ function draw() {
   cam.tilt(movedY * 0.001);
   moveCamera();
 
-  // Handle balls
-  move_balls();
+  // Handle the player
+  
+  // Handle bodies
+  move_bodies();
+  apply_thrust();
   handle_grav();
-  update_balls();
-  draw_balls();
+  update_bodies();
+  draw_bodies();
 }
