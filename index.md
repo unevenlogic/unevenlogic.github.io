@@ -16,3 +16,4 @@
 ## Experiments
 
 - [First Attempts at 3D Rendering](3d-hello-world)
+- [First Person Orbital Point Mass Simulator](3d-first-person-point)
