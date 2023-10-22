@@ -1,13 +1,16 @@
 // This mainly handles the player, but also handles the camera.
 
+const player_radius = 0;
+const player_mass = 0.00001;
+
 let thruster_strength = 0.0003;
 let cannon_cd = 0;
 
 let cam;
 
 class Player extends Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    super(x, y, z, v_x, v_y, v_z, 0, mass, "player");
+  constructor(x, y, z, v_x, v_y, v_z) {
+    super(x, y, z, v_x, v_y, v_z, 0, 0.00001, "player");
     this.rank = 2;
   }
 

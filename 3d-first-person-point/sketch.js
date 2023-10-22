@@ -98,7 +98,7 @@ function setup() {
     200, 3000,
     color(10, 20, 116),
     "Earth"));
-  playerbody = new Player(0, 0, 350, 200, 0, 0, 3, 0.00001);
+  playerbody = new Player(0, 0, 350, 200, 0, 0);
   bodies.push(playerbody);
 }
 
