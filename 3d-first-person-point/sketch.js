@@ -50,6 +50,14 @@
 // - Mouse locking and scrolling for speed control
 // - WASD for movement
 
+// Upcoming controls:
+// - l = laser
+// - m = mine
+// - t = turret (rapid fire)
+// - c = cannons
+// - Shift = hold thrusters (scroll to adjust)
+// - Space = fire weapon
+
 
 const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
@@ -77,13 +85,27 @@ let cam_speed = 20; // Default speed of camera
 const cam_sprint = 100; // Max speed of camera
 
 // Player
-let thruster_strength = 0.0001;
+let thruster_strength = 0.0003;
+let cannon_cd = 0;
+
+// Projectiles
+let ionball_radius = 3;
+let ionball_mass = 0.0000001;
+let ionball_disp = 20;
+let ionball_speed = 500;
+let ionball_life_time = 2000;
+
+let meteor_radius = 4;
+let meteor_mass = 0.0000001;
+let meteor_disp = 20;
+let meteor_speed = 500;
+let meteor_life_time = 2000;
 
 /**
  * The body gravitational object.
  */
 class Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass) {
+  constructor(x, y, z, v_x, v_y, v_z, r, mass, name) {
     this.r = r;
     this.mass = mass;
 
@@ -91,6 +113,9 @@ class Body {
     this.vel = createVector(v_x, v_y, v_z);
     this.f_net = createVector(0, 0, 0);
     this.accel = createVector(0, 0, 0);
+    
+    this.rank = 0;
+    this.name = name;
   }
 
   /**
@@ -100,7 +125,7 @@ class Body {
    */
   act_force(f_applied) {
     this.f_net.add(f_applied);
-    console.log(f_applied.mag());
+    //console.log(f_applied.mag());
   }
 
   /**
@@ -120,12 +145,21 @@ class Body {
     this.f_net = createVector(0,0,0);
     this.accel = new_accel;
   }
+  
+  damage() {
+    //this.col = "red";
+  }
+  
+  die() {
+    bodies.splice(bodies.findIndex(el => el.name === this.name), 1);
+  }
 }
 
 class Planet extends Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass, col) {
-    super(x, y, z, v_x, v_y, v_z, r, mass);
+  constructor(x, y, z, v_x, v_y, v_z, r, mass, col, name) {
+    super(x, y, z, v_x, v_y, v_z, r, mass, name);
     this.col = col;
+    this.rank = 3;
   }
 
   /**
@@ -144,7 +178,8 @@ class Planet extends Body {
 
 class Player extends Body {
   constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    super(x, y, z, v_x, v_y, v_z, 0, mass);
+    super(x, y, z, v_x, v_y, v_z, 0, mass, "player");
+    this.rank = 2;
   }
 
   /**
@@ -160,6 +195,94 @@ class Player extends Body {
     //(this.r);
     pop();
   }
+  
+  fire_cannons() {
+    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
+    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
+    let disp = centrePos.copy().sub(eyePos);
+    //disp.y = 0;
+    disp.setMag(ionball_disp);
+    let newPos = this.pos.copy().add(disp);
+    disp.setMag(ionball_speed);
+    let newVel = this.vel.copy().add(disp);
+    bodies.push(new IonBall(newPos.x, newPos.y, newPos.z, newVel.x, newVel.y, newVel.z));
+  }
+  
+  fire_weapons() {
+    if(keyIsDown(32) && millis() - cannon_cd > 500) {
+      cannon_cd = millis();
+      this.fire_cannons();
+    }
+  }
+  
+  die() {
+    //console.log("Inside...")
+    super.die();
+  }
+}
+
+class Projectile extends Body {
+  constructor(x, y, z, v_x, v_y, v_z, r, col, mass) {
+    super(x, y, z, v_x, v_y, v_z, r, mass);
+    this.col = col;
+  }
+}
+
+class MeteorBall extends Body {
+  constructor(x, y, z, v_x, v_y, v_z) {
+    super(x, y, z, v_x, v_y, v_z, ionball_radius, color("orange"), ionball_mass);
+    this.rank = 1;
+    this.start_time = millis();
+    this.name = millis();
+    this.life_time = meteor_life_time;
+  }
+}
+
+class IonBall extends Projectile {
+  constructor(x, y, z, v_x, v_y, v_z) {
+    super(x, y, z, v_x, v_y, v_z, ionball_radius, color("blue"), ionball_mass);
+    this.rank = 1;
+    this.start_time = millis();
+    this.name = millis();
+    this.life_time = ionball_life_time;
+  }
+  
+  check_time() {
+    if(millis() - this.start_time > this.life_time) {
+      this.die();
+    }
+  }
+  
+  draw() {
+    push();
+    translate(this.pos);
+    emissiveMaterial(this.col);
+    ambientMaterial(0);
+    sphere(this.r);
+    pop();
+    this.check_time();
+  }
+}
+
+/**
+ * Takes two bodies which are close enough and initiates a collision.
+ *
+ * @param {Body} body1 The first body to merge
+ * @param {Body} body2 The second body to merge
+ */
+function collide(body1, body2) {
+  if(body1.rank > body2.rank) {
+    body2.die();
+    body1.damage();
+  }
+  else if(body1.rank < body2.rank) {
+    body1.die();
+    body2.damage();
+  }
+  else {
+    body1.die();
+    body2.die();
+  }
 }
 
 /**
@@ -167,8 +290,9 @@ class Player extends Body {
  * @param {Body} body1 The first body to merge
  * @param {Body} body2 The second body to merge
  * @returns {Body} The new body.
- */
+ *
 function merge(body1, body2) {
+  
   let netMass = body1.mass + body2.mass; // Combined mass
 
   // Multiplies positions and velocities by masses in preparation for centre of
@@ -192,7 +316,7 @@ function merge(body1, body2) {
   newBody.pos = newPos;
   newBody.vel = newVel;
   return newBody;
-}
+} */
 
 /**
  * Takes two bodies and acts the force of gravity upon them.
@@ -206,11 +330,11 @@ function apply_grav(body1, body2, i, j) {
   let disp = p5.Vector.sub(body2.pos, body1.pos);
   let dist = disp.mag();
 
-  // Checks if the bodies need to be merged
+  // Checks if the bodies will collide
   if(dist === 0 || dist < body1.r + body2.r) {
-    bodies.splice(i, 1);
-    bodies.splice(j-1, 1);
-    bodies.push(merge(body1, body2));
+    //bodies.splice(i, 1);
+    //bodies.splice(j-1, 1);
+    collide(body1, body2);
   }
 
   // Normalize the vector (not needed due to setMag)
@@ -227,7 +351,7 @@ function apply_grav(body1, body2, i, j) {
 }
 
 function apply_thrust() {
-  if (keyIsDown(32)) {
+  if (keyIsDown(16)) {
     let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
     let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
     let disp = centrePos.copy().sub(eyePos);
@@ -254,6 +378,7 @@ function handle_grav() {
  */
 function move_bodies() {
   for(let body of bodies) {
+    //console.log("Worked");
     body.move();
   }
 }
@@ -281,6 +406,8 @@ function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
 
+  let test = new Projectile(1, 1, 1, 1, 1, 1);
+  
   // Create camera
   cam = createCamera();
   cam.setPosition(0, 0, 80);
@@ -302,9 +429,10 @@ function setup() {
   // Creates Earth
   bodies.push(new Planet(0,0,0,
     0,0,0,
-    20, 300,
-    color(10, 20, 116)));
-  playerbody = new Player(0,0,150,100,0,0,3,0.00001);
+    200, 3000,
+    color(10, 20, 116),
+    "Earth"));
+  playerbody = new Player(0,0,350,200,0,0,3,0.00001);
   bodies.push(playerbody);
 }
 
@@ -368,6 +496,11 @@ function draw() {
   // Handle the player
   
   // Handle bodies
+  //for(let body of bodies) {
+  //  console.log(body.name);
+  //}
+  playerbody.fire_weapons();
+  
   move_bodies();
   apply_thrust();
   handle_grav();
