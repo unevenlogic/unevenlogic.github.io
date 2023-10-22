@@ -55,351 +55,17 @@
 // - m = mine
 // - t = turret (rapid fire)
 // - c = cannons
-// - Shift = hold thrusters (scroll to adjust)
-// - Space = fire weapon
+// - Shift = hold thrusters (scroll to adjust) (implemented)
+// - Space = fire weapon (implemented)
 
 
 const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
-const default_num_bodies = 1; // The default number of bodies
-let num_bodies; // The actual number of bodies
-
-const max_pos = 0; // Maximum cardinal displacement magnitude of bodies
-const max_vel = 0; // Maximum cardinal velocity magnitude of bodies
-const min_radius = 20; // Minimum body radius
-const max_radius = 20; // Maximum body radius
-const min_mass = 300; // Minimum body mass
-const max_mass = 300; // Maximum body mass
-
-// Decreases y-related parameters to make the simulation flatter and closer to
-// a real solar system; change this to 1 for unbiased 3D randomness
-const y_bias = 0.0001;
-
-// Array of bodies
-const bodies = [];
-
 // Camera object
-let cam;
-let cam_speed = 20; // Default speed of camera
-const cam_sprint = 100; // Max speed of camera
 
-// Player
-let thruster_strength = 0.0003;
-let cannon_cd = 0;
-
-// Projectiles
-let ionball_radius = 3;
-let ionball_mass = 0.0000001;
-let ionball_disp = 20;
-let ionball_speed = 500;
-let ionball_life_time = 2000;
-
-let meteor_radius = 4;
-let meteor_mass = 0.0000001;
-let meteor_disp = 20;
-let meteor_speed = 500;
-let meteor_life_time = 2000;
-
-/**
- * The body gravitational object.
- */
-class Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass, name) {
-    this.r = r;
-    this.mass = mass;
-
-    this.pos = createVector(x, y, z);
-    this.vel = createVector(v_x, v_y, v_z);
-    this.f_net = createVector(0, 0, 0);
-    this.accel = createVector(0, 0, 0);
-    
-    this.rank = 0;
-    this.name = name;
-  }
-
-  /**
-   * Converts force to change in velocity using Newton's second law.
-   * 
-   * @param {p5.Vector} f_applied The force
-   */
-  act_force(f_applied) {
-    this.f_net.add(f_applied);
-    //console.log(f_applied.mag());
-  }
-
-  /**
-   * Updates the position of the body; part of velocity Verlet integration
-   */
-  move() {
-    this.pos.add(this.vel.copy().add(this.accel.copy().mult(deltaTime / 2000)).mult(deltaTime / 1000));
-    this.f_net = createVector(0,0,0);
-  }
-
-  /**
-   * Updates the velocity of the body; part of velocity Verlet integration
-   */
-  update() {
-    let new_accel = this.f_net.copy().mult(1 / this.mass);
-    this.vel.add(this.accel.copy().add(new_accel).mult(deltaTime / 2000));
-    this.f_net = createVector(0,0,0);
-    this.accel = new_accel;
-  }
-  
-  damage() {
-    //this.col = "red";
-  }
-  
-  die() {
-    bodies.splice(bodies.findIndex(el => el.name === this.name), 1);
-  }
-}
-
-class Planet extends Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass, col, name) {
-    super(x, y, z, v_x, v_y, v_z, r, mass, name);
-    this.col = col;
-    this.rank = 3;
-  }
-
-  /**
-   * Renders the body.
-   */
-  draw() {
-    push();
-    translate(this.pos);
-    specularMaterial(50);
-    shininess(10);
-    ambientMaterial(this.col);
-    sphere(this.r);
-    pop();
-  }
-}
-
-class Player extends Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, mass) {
-    super(x, y, z, v_x, v_y, v_z, 0, mass, "player");
-    this.rank = 2;
-  }
-
-  /**
-   * Renders the body.
-   */
-  draw() {
-    push();
-    translate(this.pos);
-
-    //specularMaterial(50);
-    //shininess(10);
-    //ambientMaterial(this.col);
-    //(this.r);
-    pop();
-  }
-  
-  fire_cannons() {
-    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
-    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
-    let disp = centrePos.copy().sub(eyePos);
-    //disp.y = 0;
-    disp.setMag(ionball_disp);
-    let newPos = this.pos.copy().add(disp);
-    disp.setMag(ionball_speed);
-    let newVel = this.vel.copy().add(disp);
-    bodies.push(new IonBall(newPos.x, newPos.y, newPos.z, newVel.x, newVel.y, newVel.z));
-  }
-  
-  fire_weapons() {
-    if(keyIsDown(32) && millis() - cannon_cd > 500) {
-      cannon_cd = millis();
-      this.fire_cannons();
-    }
-  }
-  
-  die() {
-    //console.log("Inside...")
-    super.die();
-  }
-}
-
-class Projectile extends Body {
-  constructor(x, y, z, v_x, v_y, v_z, r, col, mass) {
-    super(x, y, z, v_x, v_y, v_z, r, mass);
-    this.col = col;
-  }
-}
-
-class MeteorBall extends Body {
-  constructor(x, y, z, v_x, v_y, v_z) {
-    super(x, y, z, v_x, v_y, v_z, ionball_radius, color("orange"), ionball_mass);
-    this.rank = 1;
-    this.start_time = millis();
-    this.name = millis();
-    this.life_time = meteor_life_time;
-  }
-}
-
-class IonBall extends Projectile {
-  constructor(x, y, z, v_x, v_y, v_z) {
-    super(x, y, z, v_x, v_y, v_z, ionball_radius, color("blue"), ionball_mass);
-    this.rank = 1;
-    this.start_time = millis();
-    this.name = millis();
-    this.life_time = ionball_life_time;
-  }
-  
-  check_time() {
-    if(millis() - this.start_time > this.life_time) {
-      this.die();
-    }
-  }
-  
-  draw() {
-    push();
-    translate(this.pos);
-    emissiveMaterial(this.col);
-    ambientMaterial(0);
-    sphere(this.r);
-    pop();
-    this.check_time();
-  }
-}
-
-/**
- * Takes two bodies which are close enough and initiates a collision.
- *
- * @param {Body} body1 The first body to merge
- * @param {Body} body2 The second body to merge
- */
-function collide(body1, body2) {
-  if(body1.rank > body2.rank) {
-    body2.die();
-    body1.damage();
-  }
-  else if(body1.rank < body2.rank) {
-    body1.die();
-    body2.damage();
-  }
-  else {
-    body1.die();
-    body2.die();
-  }
-}
-
-/**
- * Takes two bodies which are close enough and merges them.
- * @param {Body} body1 The first body to merge
- * @param {Body} body2 The second body to merge
- * @returns {Body} The new body.
- *
-function merge(body1, body2) {
-  
-  let netMass = body1.mass + body2.mass; // Combined mass
-
-  // Multiplies positions and velocities by masses in preparation for centre of
-  // mass and momentum calculations
-  body1.pos.mult(body1.mass);
-  body2.pos.mult(body2.mass);
-  body1.vel.mult(body1.mass);
-  body2.vel.mult(body2.mass);
-
-  // Centre of mass
-  let newPos = body1.pos.add(body2.pos).mult(1/netMass);
-
-  // Conservation of momentum
-  let newVel = body1.vel.add(body2.vel).mult(1/netMass);
-
-  // Conservation of volume (not realistic)
-  let newRad = pow(pow(body1.r, 3) + pow(body2.r, 3), 1/3);
-
-  // Creates the new body with the updated parameters
-  let newBody = new Body(0,0,0,0,0,0,newRad, netMass);
-  newBody.pos = newPos;
-  newBody.vel = newVel;
-  return newBody;
-} */
-
-/**
- * Takes two bodies and acts the force of gravity upon them.
- * @param {Body} body1 A body to apply gravity to.
- * @param {Body} body2 Another body to apply gravity to.
- * @param {Number} i The index of the first body.
- * @param {Number} j The index of the second body.
- */
-function apply_grav(body1, body2, i, j) {
-  // Get the displacement vector
-  let disp = p5.Vector.sub(body2.pos, body1.pos);
-  let dist = disp.mag();
-
-  // Checks if the bodies will collide
-  if(dist === 0 || dist < body1.r + body2.r) {
-    //bodies.splice(i, 1);
-    //bodies.splice(j-1, 1);
-    collide(body1, body2);
-  }
-
-  // Normalize the vector (not needed due to setMag)
-  //disp.normalize();
-
-  // Calculates the gravitational force
-  let gforce = grav_scaling * body1.mass * body2.mass / dist**2;
-
-  // Applies the force
-  disp.setMag(gforce);
-  body1.act_force(disp);
-  disp.mult(-1);
-  body2.act_force(disp);
-}
-
-function apply_thrust() {
-  if (keyIsDown(16)) {
-    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
-    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
-    let disp = centrePos.copy().sub(eyePos);
-    //disp.y = 0;
-    disp.setMag(thruster_strength);
-    playerbody.act_force(disp);
-    //console.log(disp.mag());
-  }
-}
-
-/**
- * Applies gravity to every unordered pair of bodies.
- */
-function handle_grav() {
-  for(let i = 0; i < bodies.length; i++) {
-    for(let j = i + 1; j < bodies.length; j++) {
-      apply_grav(bodies[i], bodies[j], i, j);
-    }
-  }
-}
-
-/**
- * Sets the new position of each body.
- */
-function move_bodies() {
-  for(let body of bodies) {
-    //console.log("Worked");
-    body.move();
-  }
-}
-
-/**
- * Sets the new velocity of each body.
- */
-function update_bodies() {
-  for(let body of bodies) {
-    body.update();
-  }
-}
-
-/**
- * Draws each body.
- */
-function draw_bodies() {
-  for(let body of bodies) {
-    body.draw();
-  }
-}
+// let cam_speed = 20; // Default speed of camera
+// const cam_sprint = 100; // Max speed of camera
 
 function setup() {
   // Create canvas
@@ -407,14 +73,14 @@ function setup() {
   noStroke();
 
   let test = new Projectile(1, 1, 1, 1, 1, 1);
-  
+
   // Create camera
   cam = createCamera();
   cam.setPosition(0, 0, 80);
-  cam.lookAt(0,0,0);
+  cam.lookAt(0, 0, 0);
 
   // Create bodies
-  num_bodies = default_num_bodies; // prompt("How many bodies?", default_num_bodies);
+  //num_bodies = default_num_bodies; // prompt("How many bodies?", default_num_bodies);
   // for(let i = 0; i < num_bodies; i++) {
   //   bodies.push(new Planet(random(-max_pos, max_pos),
   //     random(-max_pos * y_bias, max_pos * y_bias),
@@ -427,12 +93,12 @@ function setup() {
   // }
 
   // Creates Earth
-  bodies.push(new Planet(0,0,0,
-    0,0,0,
+  bodies.push(new Planet(0, 0, 0,
+    0, 0, 0,
     200, 3000,
     color(10, 20, 116),
     "Earth"));
-  playerbody = new Player(0,0,350,200,0,0,3,0.00001);
+  playerbody = new Player(0, 0, 350, 200, 0, 0, 3, 0.00001);
   bodies.push(playerbody);
 }
 
@@ -441,66 +107,35 @@ function mousePressed() {
 }
 
 function mouseWheel(event) {
-  cam_speed -= event.delta / 100; // Change speed
-  if(cam_speed > cam_sprint) {
-    cam_speed = cam_sprint; // Speed limit
-  }
-  else if(cam_speed < 0) {
-    cam_speed = 0; // Nonnegative speed
-  }
+  // cam_speed -= event.delta / 100; // Change speed
+  // if (cam_speed > cam_sprint) {
+  //   cam_speed = cam_sprint; // Speed limit
+  // }
+  // else if (cam_speed < 0) {
+  //   cam_speed = 0; // Nonnegative speed
+  // }
 }
 
-function moveCamera() {
-  /*if(keyIsDown(87) || keyIsDown(83) || keyIsDown(65) || keyIsDown(68)) {
-    // Gets the orientation vector
-    let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
-    let centrePos = new p5.Vector(cam.centerX, cam.centerY, cam.centerZ);
-    let disp = centrePos.copy().sub(eyePos);
-    disp.y = 0;
-    disp.setMag(cam_speed);
-
-    // Handle right/left movement
-    let rightDisp = new p5.Vector(-disp.z, disp.y, disp.x);
-    let rightMult = keyIsDown(68) - keyIsDown(65);
-    rightDisp.mult(rightMult);
-    eyePos.add(rightDisp);
-
-    // Handle fowards/backwards movement
-    let forwardsMult = keyIsDown(87) - keyIsDown(83);
-    disp.mult(forwardsMult);
-    eyePos.add(disp);
-
-    // Sets the position
-    cam.setPosition(eyePos.x, eyePos.y, eyePos.z);
-  }
-  if(keyIsDown(32) && !keyIsDown(16)) { // Go up
-    cam.setPosition(cam.eyeX, cam.eyeY - cam_speed, cam.eyeZ);
-  }
-  else if(keyIsDown(16)) { // Go down
-    cam.setPosition(cam.eyeX, cam.eyeY + cam_speed, cam.eyeZ);
-  }*/
-  cam.setPosition(playerbody.pos.x, playerbody.pos.y, playerbody.pos.z);
+function apply_lighting() {
+  background(20);
+  directionalLight(250, 250, 250, 0, 0, -1);
+  ambientLight(200);
 }
 
 function draw() {
   // Handle lighting
-  background(20);
-  directionalLight(250, 250, 250, 0, 0, -1);
-  ambientLight(200);
+  apply_lighting();
 
   // Handle camera
-  cam.pan(-movedX * 0.001);
-  cam.tilt(movedY * 0.001);
-  moveCamera();
+  move_camera();
 
   // Handle the player
-  
   // Handle bodies
   //for(let body of bodies) {
   //  console.log(body.name);
   //}
   playerbody.fire_weapons();
-  
+
   move_bodies();
   apply_thrust();
   handle_grav();
