@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // Ejectors
 const ejector_radius = 10;
 const ejector_mass = 0.00001;
@@ -8,21 +9,25 @@ class Enemy extends Body {
     this.rank = 2;
   }
 
-  /*
+  /**
    * Renders the body.
-   *
+   */
   draw() {
     push();
     translate(this.pos);
  
     // Insert player model here
+    //specularMaterial(10);
+    //shininess(0);
+    ambientMaterial(this.col);
+    sphere(this.r);
  
     //specularMaterial(50);
     //shininess(10);
     //ambientMaterial(this.col);
     //(this.r);
     pop();
-  } */
+  }
 
   /*fire_cannons() {
     let eyePos = new p5.Vector(cam.eyeX, cam.eyeY, cam.eyeZ);
@@ -52,5 +57,6 @@ class Enemy extends Body {
 class Ejector extends Enemy {
   constructor(x, y, z, v_x, v_y, v_z) {
     super(x, y, z, v_x, v_y, v_z, ejector_radius, ejector_mass, "Ejector".concat(random()));
+    this.col = color(139, 0, 0);
   }
 }

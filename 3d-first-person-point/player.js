@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // This mainly handles the player, but also handles the camera.
 
 const player_radius = 0;
@@ -7,6 +8,8 @@ let thruster_strength = 0.0003;
 let cannon_cd = 0;
 
 let cam;
+
+let playerbody;
 
 class Player extends Body {
   constructor(x, y, z, v_x, v_y, v_z) {
@@ -99,4 +102,12 @@ function move_camera() {
     cam.setPosition(cam.eyeX, cam.eyeY + cam_speed, cam.eyeZ);
   }*/
   cam.setPosition(playerbody.pos.x, playerbody.pos.y, playerbody.pos.z);
+}
+
+function draw_crosshairs() {
+  // hud.fill(255);
+  // hud.line(width/2, height/2 - 20, width/2, height/2 + 20);
+  // hud.line(width/2 - 20, height/2, width/2 + 20, height/2);
+  // image(hud, 0, 0);
+  //rect(width/2 - 20, height/2 - 20, 40, 40);
 }

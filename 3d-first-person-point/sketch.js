@@ -62,6 +62,9 @@
 const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
+//let hud;
+//let graphics;
+
 // Camera object
 
 // let cam_speed = 20; // Default speed of camera
@@ -69,6 +72,10 @@ const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
 function setup() {
   // Create canvas
+  //createCanvas(windowWidth, windowHeight);
+  //graphics = createCanvas(windowWidth, windowHeight, WEBGL);
+  //hud = createCanvas(windowWidth, windowHeight);
+
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
 
@@ -96,10 +103,12 @@ function setup() {
   bodies.push(new Planet(0, 0, 0,
     0, 0, 0,
     200, 3000,
-    color(10, 20, 116),
+    color(5, 10, 58),
     "Earth"));
   playerbody = new Player(0, 0, 350, 200, 0, 0);
   bodies.push(playerbody);
+  let ejector = new Ejector(0, 0, -350, -200, 0, 0);
+  bodies.push(ejector);
 }
 
 function mousePressed() {
@@ -119,7 +128,7 @@ function mouseWheel(event) {
 function apply_lighting() {
   background(20);
   directionalLight(250, 250, 250, 0, 0, -1);
-  ambientLight(200);
+  ambientLight(250);
 }
 
 function draw() {
@@ -141,4 +150,5 @@ function draw() {
   handle_grav();
   update_bodies();
   draw_bodies();
+  draw_crosshairs();
 }

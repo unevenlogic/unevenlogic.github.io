@@ -7,6 +7,7 @@
 - [Ball Array](03-ball-array)
 - [Perlin Noise Ball](04-noise-ball)
 - [Sounds and Images](05-sound)
+- [Terrain Generation](06-terrain)
 
 ## Projects
 

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // Array of bodies
 const bodies = [];
 
