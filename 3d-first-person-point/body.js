@@ -57,6 +57,8 @@ class Body {
   die() {
     bodies.splice(bodies.findIndex(el => el.name === this.name), 1);
   }
+  
+  fire_weapons() {}
 }
 
 class Planet extends Body {
@@ -70,13 +72,13 @@ class Planet extends Body {
    * Renders the body.
    */
   draw() {
-    push();
-    translate(this.pos);
-    specularMaterial(50);
-    shininess(10);
-    ambientMaterial(this.col);
-    sphere(this.r);
-    pop();
+    space.push();
+    space.translate(this.pos);
+    space.specularMaterial(50);
+    space.shininess(10);
+    space.ambientMaterial(this.col);
+    space.sphere(this.r);
+    space.pop();
   }
 }
 

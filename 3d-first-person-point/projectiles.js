@@ -20,12 +20,29 @@ class Projectile extends Body {
   }
 }
 
-class MeteorBall extends Body {
+class MeteorBall extends Projectile {
   constructor(x, y, z, v_x, v_y, v_z) {
     super(x, y, z, v_x, v_y, v_z, ionball_radius, color("orange"), ionball_mass);
     this.start_time = millis();
     this.name = millis();
     this.life_time = meteor_life_time;
+    this.col = color("orange");
+  }
+
+  check_time() {
+    if (millis() - this.start_time > this.life_time) {
+      this.die();
+    }
+  }
+
+  draw() {
+    space.push();
+    space.translate(this.pos);
+    space.emissiveMaterial(this.col);
+    space.ambientMaterial(0);
+    space.sphere(this.r);
+    space.pop();
+    this.check_time();
   }
 }
 
@@ -44,12 +61,12 @@ class IonBall extends Projectile {
   }
 
   draw() {
-    push();
-    translate(this.pos);
-    emissiveMaterial(this.col);
-    ambientMaterial(0);
-    sphere(this.r);
-    pop();
+    space.push();
+    space.translate(this.pos);
+    space.emissiveMaterial(this.col);
+    space.ambientMaterial(0);
+    space.sphere(this.r);
+    space.pop();
     this.check_time();
   }
 }

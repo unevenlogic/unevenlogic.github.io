@@ -63,7 +63,7 @@ const grav_scaling = 5000; // Gravity force scaling versus mass
 const mass_temp_scaling = 0.15; // Black body temperature scaling versus mass
 
 //let hud;
-//let graphics;
+let space;
 
 // Camera object
 
@@ -76,13 +76,14 @@ function setup() {
   //graphics = createCanvas(windowWidth, windowHeight, WEBGL);
   //hud = createCanvas(windowWidth, windowHeight);
 
-  createCanvas(windowWidth, windowHeight, WEBGL);
-  noStroke();
+  createCanvas(windowWidth, windowHeight);
+  space = createGraphics(windowWidth, windowHeight, WEBGL);
+  space.noStroke();
 
   let test = new Projectile(1, 1, 1, 1, 1, 1);
 
   // Create camera
-  cam = createCamera();
+  cam = space.createCamera();
   cam.setPosition(0, 0, 80);
   cam.lookAt(0, 0, 0);
 
@@ -126,9 +127,9 @@ function mouseWheel(event) {
 }
 
 function apply_lighting() {
-  background(20);
-  directionalLight(250, 250, 250, 0, 0, -1);
-  ambientLight(250);
+  space.background(20);
+  space.directionalLight(50, 50, 50, 0, 0, -1);
+  space.ambientLight(50);
 }
 
 function draw() {
@@ -140,15 +141,18 @@ function draw() {
 
   // Handle the player
   // Handle bodies
-  //for(let body of bodies) {
-  //  console.log(body.name);
-  //}
-  playerbody.fire_weapons();
+  for(let body of bodies) {
+   //console.log(body.name);
+   body.fire_weapons();
+  }
 
   move_bodies();
   apply_thrust();
   handle_grav();
   update_bodies();
   draw_bodies();
+
+  image(space, 0, 0);
+
   draw_crosshairs();
 }

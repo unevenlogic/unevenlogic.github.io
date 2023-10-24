@@ -21,8 +21,8 @@ class Player extends Body {
    * Renders the body.
    */
   draw() {
-    push();
-    translate(this.pos);
+    space.push();
+    space.translate(this.pos);
 
     // Insert player model here
 
@@ -30,7 +30,7 @@ class Player extends Body {
     //shininess(10);
     //ambientMaterial(this.col);
     //(this.r);
-    pop();
+    space.pop();
   }
 
   fire_cannons() {
@@ -105,9 +105,9 @@ function move_camera() {
 }
 
 function draw_crosshairs() {
-  // hud.fill(255);
-  // hud.line(width/2, height/2 - 20, width/2, height/2 + 20);
-  // hud.line(width/2 - 20, height/2, width/2 + 20, height/2);
+  stroke(255);
+  line(width/2, height/2 - 20, width/2, height/2 + 20);
+  line(width/2 - 20, height/2, width/2 + 20, height/2);
   // image(hud, 0, 0);
   //rect(width/2 - 20, height/2 - 20, 40, 40);
 }
