@@ -20,6 +20,7 @@ class Body {
 
     this.rank = 0;
     this.name = name;
+    this.dmg = 0;
   }
 
   /**
@@ -50,7 +51,7 @@ class Body {
     this.accel = new_accel;
   }
 
-  damage() {
+  damage(dmg) {
     //this.col = "red";
   }
 
@@ -91,15 +92,15 @@ class Planet extends Body {
 function collide(body1, body2) {
   if (body1.rank > body2.rank) {
     body2.die();
-    body1.damage();
+    body1.damage(body2.dmg);
   }
   else if (body1.rank < body2.rank) {
     body1.die();
-    body2.damage();
+    body2.damage(body1.dmg);
   }
   else {
-    body1.die();
-    body2.die();
+    body1.damage(body2.dmg);
+    body2.damage(body1.dmg);
   }
 }
 

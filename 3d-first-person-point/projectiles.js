@@ -27,6 +27,7 @@ class MeteorBall extends Projectile {
     this.name = millis();
     this.life_time = meteor_life_time;
     this.col = color("orange");
+    this.dmg = 4;
   }
 
   check_time() {
@@ -52,6 +53,7 @@ class IonBall extends Projectile {
     this.start_time = millis();
     this.name = millis();
     this.life_time = ionball_life_time;
+    this.dmg = 4;
   }
 
   check_time() {

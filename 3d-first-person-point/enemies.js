@@ -48,6 +48,13 @@ class Enemy extends Body {
     //   }
   }
 
+  damage(dmg) {
+    this.health -= dmg;
+    if(this.health <= 0) {
+      this.die();
+    }
+  }
+
   die() {
     //console.log("Inside...")
     super.die();
@@ -59,6 +66,7 @@ class Ejector extends Enemy {
     super(x, y, z, v_x, v_y, v_z, ejector_radius, ejector_mass, "Ejector".concat(random()));
     this.col = color(139, 0, 0);
     this.meteor_cd = 0;
+    this.health = 20;
   }
 
   fire_weapons() {

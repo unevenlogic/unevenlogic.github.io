@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 // This mainly handles the player, but also handles the camera.
 
-const player_radius = 0;
+const player_radius = 10;
 const player_mass = 0.00001;
 
 let thruster_strength = 0.0003;
@@ -15,6 +15,7 @@ class Player extends Body {
   constructor(x, y, z, v_x, v_y, v_z) {
     super(x, y, z, v_x, v_y, v_z, 0, 0.00001, "player");
     this.rank = 2;
+    this.health = 20;
   }
 
   /**
@@ -49,6 +50,14 @@ class Player extends Body {
     if (keyIsDown(32) && millis() - cannon_cd > 500) {
       cannon_cd = millis();
       this.fire_cannons();
+    }
+  }
+
+  damage(dmg) {
+    super.damage();
+    this.health -= dmg;
+    if(this.health <= 0) {
+      this.die();
     }
   }
 
