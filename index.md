@@ -8,6 +8,7 @@
 - [Perlin Noise Ball](04-noise-ball)
 - [Sounds and Images](05-sound)
 - [Terrain Generation](06-terrain)
+- [Draw a Grid](07-2d-grid)
 
 ## Projects
 
@@ -18,3 +19,4 @@
 
 - [First Attempts at 3D Rendering](3d-hello-world)
 - [First Person Orbital Point Mass Simulator](3d-first-person-point)
+- [Conway's Game of Life](game-of-life)

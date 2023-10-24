@@ -3,6 +3,8 @@
 const ejector_radius = 10;
 const ejector_mass = 0.00001;
 
+const ejector_accuracy = 0.9;
+
 class Enemy extends Body {
   constructor(x, y, z, v_x, v_y, v_z, r, mass, name) {
     super(x, y, z, v_x, v_y, v_z, r, mass, name);
@@ -77,7 +79,10 @@ class Ejector extends Enemy {
       let newPos = this.pos.copy().add(disp);
       disp.setMag(meteor_speed);
       let newVel = this.vel.copy().add(disp);
-      bodies.push(new MeteorBall(newPos.x, newPos.y, newPos.z, disp.x, disp.y, disp.z));
+      bodies.push(new MeteorBall(newPos.x, newPos.y, newPos.z,
+        disp.x * random(ejector_accuracy, 1),
+        disp.y * random(ejector_accuracy, 1),
+        disp.z * random(ejector_accuracy, 1)));
       this.meteor_cd = millis();
       //console.log("!!")
     }

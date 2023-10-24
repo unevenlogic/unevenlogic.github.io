@@ -108,7 +108,7 @@ function setup() {
     "Earth"));
   playerbody = new Player(0, 0, 350, 200, 0, 0);
   bodies.push(playerbody);
-  let ejector = new Ejector(0, 0, -350, -200, 0, 0);
+  let ejector = new Ejector(350, 0, 0, 0, 0, -200);
   bodies.push(ejector);
 }
 
@@ -142,8 +142,8 @@ function draw() {
   // Handle the player
   // Handle bodies
   for(let body of bodies) {
-   //console.log(body.name);
-   body.fire_weapons();
+    //console.log(body.name);
+    body.fire_weapons();
   }
 
   move_bodies();

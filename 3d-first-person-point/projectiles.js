@@ -2,13 +2,13 @@
 // Projectiles
 let ionball_radius = 3;
 let ionball_mass = 0.0000001;
-let ionball_disp = 5;
+let ionball_disp = 10;
 let ionball_speed = 1000;
 let ionball_life_time = 2000;
 
 let meteor_radius = 4;
 let meteor_mass = 0.0000001;
-let meteor_disp = 5;
+let meteor_disp = 10;
 let meteor_speed = 1000;
 let meteor_life_time = 2000;
 
