@@ -86,6 +86,8 @@ function setup() {
   cam = space.createCamera();
   cam.setPosition(0, 0, 80);
   cam.lookAt(0, 0, 0);
+  let eyeZ = (height/2) / tan(PI/6);
+  cam.perspective(PI/3, width/height, eyeZ/10, eyeZ*20)
 
   // Create bodies
   //num_bodies = default_num_bodies; // prompt("How many bodies?", default_num_bodies);
@@ -103,12 +105,12 @@ function setup() {
   // Creates Earth
   bodies.push(new Planet(0, 0, 0,
     0, 0, 0,
-    200, 3000,
+    2000, 3000,
     color(5, 10, 58),
     "Earth"));
-  playerbody = new Player(0, 0, 350, 200, 0, 0);
+  playerbody = new Player(0, 0, 3500, 60, 0, 0);
   bodies.push(playerbody);
-  let ejector = new Ejector(350, 0, 0, 0, 0, -200);
+  let ejector = new Ejector(3500, 0, 0, 0, 0, -60);
   bodies.push(ejector);
 }
 

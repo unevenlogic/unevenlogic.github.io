@@ -1,9 +1,9 @@
 /* eslint-disable no-undef */
 // Ejectors
-const ejector_radius = 10;
+const ejector_radius = 100;
 const ejector_mass = 0.00001;
 
-const ejector_accuracy = 0.9;
+const ejector_accuracy = 1;
 
 class Enemy extends Body {
   constructor(x, y, z, v_x, v_y, v_z, r, mass, name) {
@@ -78,11 +78,11 @@ class Ejector extends Enemy {
       disp.setMag(meteor_disp);
       let newPos = this.pos.copy().add(disp);
       disp.setMag(meteor_speed);
-      let newVel = this.vel.copy().add(disp);
+      let newVel = disp.copy().sub(this.vel);
       bodies.push(new MeteorBall(newPos.x, newPos.y, newPos.z,
-        disp.x * random(ejector_accuracy, 1),
-        disp.y * random(ejector_accuracy, 1),
-        disp.z * random(ejector_accuracy, 1)));
+        newVel.x * random(ejector_accuracy, 1),
+        newVel.y * random(ejector_accuracy, 1),
+        newVel.z * random(ejector_accuracy, 1)));
       this.meteor_cd = millis();
       //console.log("!!")
     }

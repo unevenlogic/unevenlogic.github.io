@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 // This mainly handles the player, but also handles the camera.
 
-const player_radius = 10;
+const player_radius = 100;
 const player_mass = 0.00001;
 
 let thruster_strength = 0.0003;

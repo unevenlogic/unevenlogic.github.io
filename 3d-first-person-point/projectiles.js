@@ -1,16 +1,16 @@
 /* eslint-disable no-undef */
 // Projectiles
-let ionball_radius = 3;
+let ionball_radius = 10;
 let ionball_mass = 0.0000001;
-let ionball_disp = 10;
-let ionball_speed = 1000;
-let ionball_life_time = 2000;
+let ionball_disp = 200;
+let ionball_speed = 5000;
+let ionball_life_time = 3000;
 
-let meteor_radius = 4;
+let meteor_radius = 10;
 let meteor_mass = 0.0000001;
-let meteor_disp = 10;
-let meteor_speed = 1000;
-let meteor_life_time = 2000;
+let meteor_disp = 200;
+let meteor_speed = 5000;
+let meteor_life_time = 3000;
 
 class Projectile extends Body {
   constructor(x, y, z, v_x, v_y, v_z, r, col, mass) {
