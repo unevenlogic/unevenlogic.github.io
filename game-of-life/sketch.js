@@ -16,15 +16,21 @@ let time = 0;
 let ms = 0;
 
 let run_ms = 0;
-let no_dim_runtime = 2000;
-let dim_speed = 20;
+let no_dim_runtime = 3000;
+let dim_speed = 10;
+const dim_limit = 130;
+const dark_col = 139;
 
 let start_gol = true;
 let start_ms = 0;
 const start_speed = 10;
 
+const eval_speed = 50;
+
+//let movedX; let movedY;
+
 const start_text = `Press Enter to evaluate one step
-Press G to continue evaluating
+Press Space to toggle auto-evaluation
 Press the squares to flip their state
 Press E to empty the grid
 Press R to randomize the grid
@@ -162,10 +168,10 @@ function keyPressed() {
       continueEvaluation = false;
       grid = evaluateNext();
     }
-    if(keyCode === 71) {
+    if(keyCode === 32) {
       randomSquares = false;
-      continueEvaluation = true;
-      run_ms = millis() + no_dim_runtime;
+      continueEvaluation = !continueEvaluation;
+      resetRunMs();
     }
   }
 }
@@ -175,6 +181,10 @@ function windowResized() {
   squareSize = min((height - 2*padding) / ySize, (width - 2*padding) / xSize);
   startX = max(padding, width/2 - squareSize * xSize / 2);
   startY = max(padding, height/2 - squareSize * ySize / 2);
+}
+
+function resetRunMs() {
+  run_ms = millis() + no_dim_runtime;
 }
 
 function draw() {
@@ -188,22 +198,36 @@ function draw() {
     }
     else if(continueEvaluation) {
       background("darkblue");
+      if(millis() > run_ms) {
+        if(millis() > run_ms + dim_limit * dim_speed) {
+          background(0, 0, dark_col - dim_limit);
+          noCursor();
+        }
+        else {
+          background(0, 0, dark_col - (millis() - run_ms) / dim_speed);
+          noCursor();
+        }
+      }
+      if(movedX !== 0 || movedY !== 0 || mouseIsPressed) {
+        resetRunMs();
+        cursor(ARROW);
+      }
     }
     else {
       background("darkgreen");
     }
-    displayGrid(grid);
-    clicked = false;
-    if(randomSquares && millis() - ms > 100) {
+    if(randomSquares && millis() - ms > eval_speed) {
       randomizeGrid(grid);
       ms = millis();
     }
-    else if(continueEvaluation && millis() - ms > 100) {
+    else if(continueEvaluation && millis() - ms > eval_speed) {
       grid = evaluateNext();
       ms = millis();
     }
+    displayGrid(grid);
+    clicked = false;
     if(millis() - start_ms < 255 * start_speed && randomSquares) {
-      background(139, 0, 0, 255 + (start_ms - millis()) / start_speed);
+      background(dark_col, 0, 0, 255 + (start_ms - millis()) / start_speed);
     }
   }
 }
