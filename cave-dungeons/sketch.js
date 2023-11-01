@@ -9,7 +9,7 @@ let startY;
 const xSize = 60;
 const ySize = 30;
 
-const fillPortion = 0.4;
+const fillPortion = 0.20;
 let age = 0;
 
 // let clicked = true;
@@ -124,7 +124,7 @@ function evaluateCave(newGrid, grid) {
           }
         }
         else {
-          if(getAliveWithin(grid, i, j, 1) >= 2) {
+          if(getAliveWithin(grid, i, j, 1) >= 3) {
             newGrid[i][j] = 1;
           }
         }
@@ -185,7 +185,7 @@ function randomizeGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
     for(let j = 0; j < row.length; j++) {
-      grid[i][j] = random() < fillPortion;
+      grid[i][j] = random()*noise(i/20, j/20) < fillPortion;
     }
   }
 }
