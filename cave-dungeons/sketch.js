@@ -9,8 +9,11 @@ let startY;
 const xSize = 60;
 const ySize = 30;
 
-const fillPortion = 0.20;
+const fillPortion = 0.4;
+const richnessPortion = 0.6;
 let age = 0;
+
+const noiseScalar = 0.5;
 
 // let clicked = true;
 // let randomSquares = true;
@@ -177,6 +180,9 @@ function setup() {
   startY = max(padding, height/2 - squareSize * ySize / 2);
   generateEmptyGrid(grid);
   randomizeGrid(grid);
+  for(let i = 0; i < 3; i++) {
+    grid = evaluateNext(grid);
+  }
   // background("darkred");
   //window.alert(start_text);
 }
@@ -185,7 +191,10 @@ function randomizeGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
     for(let j = 0; j < row.length; j++) {
-      grid[i][j] = random()*noise(i/20, j/20) < fillPortion;
+      grid[i][j] = random() < fillPortion;
+      if (noise(i/10, j/10) > richnessPortion) {
+        grid[i][j] = 1;
+      }
     }
   }
 }
