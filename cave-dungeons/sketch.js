@@ -10,7 +10,7 @@ const xSize = 60;
 const ySize = 30;
 
 const fillPortion = 0.4;
-const richnessPortion = 0.6;
+const richnessPortion = 0.5;
 let age = 0;
 
 const noiseScalar = 0.5;
@@ -53,6 +53,8 @@ const noiseScalar = 0.5;
 //   [0,1,1,1]];
 
 let grid = new Array(ySize);
+let ancients = new Array(ySize);
+let nodes = new Array(Math.floor(ySize / 2));
 
 function wrapIndices(a, b) {
   a += ySize;
@@ -166,25 +168,24 @@ function evaluateNext(grid) {
   return newGrid;
 }
 
-function generateEmptyGrid(grid) {
+function generateEmptyGrid(grid, x = xSize, toFill = 0) {
   for(let i = 0; i < ySize; i++) {
-    grid[i] = new Array(xSize).fill(0);
+    grid[i] = new Array(x).fill(toFill);
   }
 }
 
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  stroke(0, 50);
-  squareSize = min((height - 2*padding) / ySize, (width - 2*padding) / xSize);
-  startX = max(padding, width/2 - squareSize * xSize / 2);
-  startY = max(padding, height/2 - squareSize * ySize / 2);
-  generateEmptyGrid(grid);
-  randomizeGrid(grid);
-  for(let i = 0; i < 3; i++) {
-    grid = evaluateNext(grid);
+function fillAncients(grid) {
+  for(let i = 0; i < grid.length; i++) {
+    let row = grid[i];
+    for(let j = 0; j < row.length; j++) {
+      if (noise(i/10, j/10) > richnessPortion) {
+        grid[i][j] = 1; // ! Altered meaning !
+      }
+      else {
+        grid[i][j] = 0;
+      }
+    }
   }
-  // background("darkred");
-  //window.alert(start_text);
 }
 
 function randomizeGrid(grid) {
@@ -197,6 +198,53 @@ function randomizeGrid(grid) {
       }
     }
   }
+}
+
+function insertNodes(grid) {
+  for(let i = 0; i < grid.length; i+=2) {
+    let row = grid[i];
+    for(let j = 0; j < row.length; j+=2) {
+      if(ancients[i][j]) {//&&
+        //(getAliveWithin(grid, i, j, 1) >= 8 ||
+        //getAliveWithin(grid, i, j, 1) >= 5 && random() > 0.5)) {
+        nodes[i/2][j/2] = [1, []];
+        grid[i][j] = 0;
+      }
+    }
+  }
+}
+
+function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not be present in the final version
+  let newGrid = structuredClone(overlay);
+  for(let i = 0; i < newGrid.length; i++) {
+    let row = newGrid[i];
+    for(let j = 0; j < row.length; j++) {
+      if(row[j] === 1) {
+        row[j] = grid[i][j];
+      }
+    }
+  }
+  return newGrid;
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  stroke(0, 50);
+  squareSize = min((height - 2*padding) / ySize, (width - 2*padding) / xSize);
+  startX = max(padding, width/2 - squareSize * xSize / 2);
+  startY = max(padding, height/2 - squareSize * ySize / 2);
+  generateEmptyGrid(grid);
+  generateEmptyGrid(ancients);
+  generateEmptyGrid(nodes, Math.floor(xSize / 2), [0]);
+  randomizeGrid(grid);
+  fillAncients(ancients);
+  for(let i = 0; i < 3; i++) {
+    grid = evaluateNext(grid);
+  }
+  //grid = getOverlaidGrid(grid, ancients);
+  insertNodes(grid);
+  // background("darkred");
+  //window.alert(start_text);
 }
 
 function displayGrid(grid) {
