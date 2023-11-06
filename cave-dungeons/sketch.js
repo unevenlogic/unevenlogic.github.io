@@ -53,7 +53,7 @@ const noiseScalar = 0.5;
 //   [0,1,1,1]];
 
 let grid = new Array(ySize);
-let ancients = new Array(ySize);
+//let ancients = new Array(ySize);
 let nodes = new Array(Math.floor(ySize / 2));
 
 function wrapIndices(a, b) {
@@ -174,20 +174,6 @@ function generateEmptyGrid(grid, x = xSize, toFill = 0) {
   }
 }
 
-function fillAncients(grid) {
-  for(let i = 0; i < grid.length; i++) {
-    let row = grid[i];
-    for(let j = 0; j < row.length; j++) {
-      if (noise(i/10, j/10) > richnessPortion) {
-        grid[i][j] = 1; // ! Altered meaning !
-      }
-      else {
-        grid[i][j] = 0;
-      }
-    }
-  }
-}
-
 function randomizeGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
@@ -200,11 +186,28 @@ function randomizeGrid(grid) {
   }
 }
 
-function insertNodes(grid) {
+// function fillAncients(grid) {
+//   for(let i = 0; i < grid.length; i++) {
+//     let row = grid[i];
+//     for(let j = 0; j < row.length; j++) {
+//       if (noise(i/10, j/10) > richnessPortion) {
+//         grid[i][j][0] = 1; // ! Altered meaning !
+//       }
+//       else {
+//         grid[i][j][0] = 0;
+//       }
+//     }
+//   }
+// }
+
+const dirs = [[0,-1], [1,0], [0,1], [-1,0]]; // N, E, S, W
+
+function insertNodes(grid, nodes) {
+  // Identify nodes
   for(let i = 0; i < grid.length; i+=2) {
     let row = grid[i];
     for(let j = 0; j < row.length; j+=2) {
-      if(ancients[i][j]) {//&&
+      if(noise(i/10, j/10) > richnessPortion) {//&&
         //(getAliveWithin(grid, i, j, 1) >= 8 ||
         //getAliveWithin(grid, i, j, 1) >= 5 && random() > 0.5)) {
         nodes[i/2][j/2] = [1, []];
@@ -212,6 +215,41 @@ function insertNodes(grid) {
       }
     }
   }
+
+  // Fill in edge weights
+  for(let i = 0; i < nodes.length; i++) {
+    let row = nodes[i];
+    for(let j = 0; j < row.length; j++) {
+      if(nodes[i][j][0] === 0) {
+        continue;
+      }
+      let thisNode = nodes[i][j];
+      for(let dir of dirs) {
+        let y = i + dir[1];
+        let x = j + dir[0];
+        if(x < 0 || x >= row.length || y < 0 || y >= nodes.length || nodes[y][x][0] === 0) {
+          continue;
+        }
+        let otherNode = nodes[y][x];
+        nodes[i][j][1].push([0, dir[0], dir[1], random()]);
+      }
+    }
+  }
+}
+
+class Heap {
+  constructor() {
+    this.heap = [];
+  }
+}
+
+function doPrim(i, j) {
+  nodes[i][j][0] = 2;
+
+}
+
+function generatePerfectMaze() {
+  //
 }
 
 function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not be present in the final version
@@ -234,15 +272,15 @@ function setup() {
   startX = max(padding, width/2 - squareSize * xSize / 2);
   startY = max(padding, height/2 - squareSize * ySize / 2);
   generateEmptyGrid(grid);
-  generateEmptyGrid(ancients);
+  //generateEmptyGrid(ancients);
   generateEmptyGrid(nodes, Math.floor(xSize / 2), [0]);
   randomizeGrid(grid);
-  fillAncients(ancients);
+  //fillAncients(nodes);
   for(let i = 0; i < 3; i++) {
     grid = evaluateNext(grid);
   }
   //grid = getOverlaidGrid(grid, ancients);
-  insertNodes(grid);
+  insertNodes(grid, nodes);
   // background("darkred");
   //window.alert(start_text);
 }
