@@ -265,6 +265,86 @@ function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not
   return newGrid;
 }
 
+// Classes
+
+const moveTime = 50;
+
+class Player {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.prevX = x;
+    this.prevY = y;
+    this.timer = 0;
+    this.turn = true;
+    this.onTimer = false;
+  }
+
+  update() {
+    if(this.turn && keyIsPressed) {
+      let endTurn = true;
+      let xDisp = 0;
+      let yDisp = 0;
+      switch(key) {
+      case "w":
+        this.y -= 0.5;
+        break;
+      case "s":
+        this.y += 0.5;
+        break;
+      case "a":
+        this.x -= 0.5;
+        break;
+      case "d":
+        this.x += 0.5;
+        break;
+      default:
+        endTurn = false;
+      }
+      //console.log(key);
+      if(endTurn) {
+        this.turn = false;
+        this.onTimer = true;
+        this.timer = millis();
+      }
+    }
+    if(this.onTimer && millis() - this.timer > moveTime) {
+      let newX = 2 * this.x - this.prevX;
+      let newY = 2 * this.y - this.prevY;
+      if(newX < 0 || newX >= xSize || newY < 0 || newY >= ySize) {
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.onTimer = false;
+        return;
+      }
+      if(grid[newY][newX] === 1) {
+        grid[newY][newX] = 0;
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.onTimer = false;
+        this.timer = millis();
+        return;
+      }
+      this.x = newX;
+      this.y = newY;
+      this.prevX = newX;
+      this.prevY = newY;
+      this.onTimer = false;
+      this.timer = millis();
+    }
+    else if(millis() - this.timer > moveTime) {
+      this.turn = true;
+    }
+  }
+
+  draw() {
+    fill("green");
+    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 10);
+  }
+}
+
+let player;
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   stroke(0, 50);
@@ -283,6 +363,8 @@ function setup() {
   insertNodes(grid, nodes);
   // background("darkred");
   //window.alert(start_text);
+
+  player = new Player(0, 0);
 }
 
 function displayGrid(grid) {
@@ -376,6 +458,8 @@ function draw() {
   //   ms = millis();
   // }
   displayGrid(grid);
+  player.update();
+  player.draw();
   // clicked = false;
   // if(millis() - start_ms < 255 * start_speed && randomSquares) {
   //   background(dark_col, 0, 0, 255 + (start_ms - millis()) / start_speed);
