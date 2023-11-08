@@ -14,6 +14,10 @@ const richnessPortion = 0.5;
 let age = 0;
 
 const noiseScalar = 0.5;
+const terrainRoughness = 1.0;
+
+let inAncientness = false;
+let ancientness = 0;
 
 // let clicked = true;
 // let randomSquares = true;
@@ -186,6 +190,17 @@ function randomizeGrid(grid) {
   }
 }
 
+function roughenTerrain(grid) {
+  for(let i = 0; i < grid.length; i++) {
+    let row = grid[i];
+    for(let j = 0; j < row.length; j++) {
+      if (grid[i][j] === 0) {
+        grid[i][j] = noise(i/3, j/3, 20) * (1 - noise(i/10, j/10)**2) * terrainRoughness;
+      }
+    }
+  }
+}
+
 // function fillAncients(grid) {
 //   for(let i = 0; i < grid.length; i++) {
 //     let row = grid[i];
@@ -245,7 +260,6 @@ class Heap {
 
 function doPrim(i, j) {
   nodes[i][j][0] = 2;
-
 }
 
 function generatePerfectMaze() {
@@ -317,14 +331,21 @@ class Player {
         this.onTimer = false;
         return;
       }
-      if(grid[newY][newX] === 1) {
-        grid[newY][newX] = 0;
+      if(grid[newY][newX] >= (1 - noise(newY/10, newX/10))**2) {
+        if(noise(newY/10, newX/10) > richnessPortion) {
+          grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
+        }
+        else {
+          grid[newY][newX] -= 0.5;
+        }
+        //grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
         this.x = this.prevX;
         this.y = this.prevY;
         this.onTimer = false;
         this.timer = millis();
         return;
       }
+      grid[newY][newX] = 0;
       this.x = newX;
       this.y = newY;
       this.prevX = newX;
@@ -339,7 +360,14 @@ class Player {
 
   draw() {
     fill("green");
-    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 10);
+    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
+    ancientness = noise(this.prevY/10, this.prevX/10);
+    // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
+    //   inAncientness = true;
+    // }
+    // else {
+    //   inAncientness = false;
+    // }
   }
 }
 
@@ -359,6 +387,7 @@ function setup() {
   for(let i = 0; i < 3; i++) {
     grid = evaluateNext(grid);
   }
+  roughenTerrain(grid);
   //grid = getOverlaidGrid(grid, ancients);
   insertNodes(grid, nodes);
   // background("darkred");
@@ -448,7 +477,8 @@ function draw() {
   //   background("darkred");
   //   start_ms = millis();
   // }
-  background("darkblue");
+  background(ancientness*150, 50, 50);
+  
   // if(randomSquares && millis() - ms > eval_speed) {
   //   randomizeGrid(grid);
   //   ms = millis();
