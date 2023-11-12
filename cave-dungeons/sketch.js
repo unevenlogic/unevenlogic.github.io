@@ -340,6 +340,102 @@ function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not
 
 const moveTime = 50;
 
+class Enemy {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.prevX = x;
+    this.prevY = y;
+    this.timer = 0;
+    this.turn = false;
+    this.onTimer = false;
+  }
+
+  get_direction() {
+    let xDisp = player.x - this.x;
+    let yDisp = player.y - this.y;
+    let xDist = Math.abs(xDisp);
+    let yDist = Math.abs(yDisp);
+    if(xDisp === 0 && yDisp === 0) {
+      goNext = true;
+      return [0, 0];
+    }
+    else if(xDist >= yDist) {
+      return [xDisp / xDist, 0];
+    }
+    else {
+      return [0, yDisp / yDist];
+    }
+  }
+
+  update() {
+    if(this.turn && !this.onTimer) {
+      // Enemy movement to midpoint
+      let t = this.get_direction();
+      this.x += t[0] / 2;
+      this.y += t[1] / 2;
+      this.onTimer = true; // Add a timer to stall player in midpoint
+      this.timer = millis();
+    }
+    else if(this.turn && this.onTimer && millis() - this.timer > moveTime) {
+      // Completion and outcome of movement
+      let newX = 2 * this.x - this.prevX;
+      let newY = 2 * this.y - this.prevY;
+      if(newX < 0 || newX >= xSize || newY < 0 || newY >= ySize) {
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.turn = false; // End turn
+        return;
+      }
+      if(grid[newY][newX] === 2) {
+        // Entered an exit
+        goNext = true; // Proceed to next level
+      }
+      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2 * 0.2) {
+        // Mining a block
+
+        // if(getAncientness(newY, newX) > richnessPortion) {
+        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2 * 0.2;
+        // }
+        // else {
+        //   grid[newY][newX] -= 0.6;
+        // }
+        //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.turn = false; // Allow enemies to move after move completion
+        this.timer = millis(); // Smoothen motion
+        return;
+      }
+      // Normal movement
+      grid[newY][newX] = 0;
+      this.x = newX;
+      this.y = newY;
+      this.prevX = newX;
+      this.prevY = newY;
+      this.turn = false; // Allow enemies to move after move completion
+      this.timer = millis(); // Smoothen motion
+    }
+    else if(millis() - this.timer > moveTime) {
+      // Delay before moving again
+      this.onTimer = false;
+      this.turn = true;
+    }
+  }
+
+  draw() {
+    fill("orange");
+    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
+    // ancientness = getAncientness(this.prevY, this.prevX);
+    // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
+    //   inAncientness = true;
+    // }
+    // else {
+    //   inAncientness = false;
+    // }
+  }
+}
+
 class Player {
   constructor(x, y) {
     this.x = x;
@@ -352,7 +448,8 @@ class Player {
   }
 
   update() {
-    if(this.turn && keyIsPressed) {
+    if(this.turn && !this.onTimer && keyIsPressed) {
+      // Player movement to midpoint
       let endTurn = true;
       let xDisp = 0;
       let yDisp = 0;
@@ -374,24 +471,28 @@ class Player {
       }
       //console.log(key);
       if(endTurn) {
-        this.turn = false;
-        this.onTimer = true;
+        // this.turn = false;
+        this.onTimer = true; // Add a timer to stall player in midpoint
         this.timer = millis();
       }
     }
-    if(this.onTimer && millis() - this.timer > moveTime) {
+    else if(this.turn && this.onTimer && millis() - this.timer > moveTime) {
+      // Completion and outcome of movement
       let newX = 2 * this.x - this.prevX;
       let newY = 2 * this.y - this.prevY;
       if(newX < 0 || newX >= xSize || newY < 0 || newY >= ySize) {
         this.x = this.prevX;
         this.y = this.prevY;
-        this.onTimer = false;
+        this.turn = false; // End turn
         return;
       }
       if(grid[newY][newX] === 2) {
-        goNext = true;
+        // Entered an exit
+        goNext = true; // Proceed to next level
       }
       else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2) {
+        // Mining a block
+
         // if(getAncientness(newY, newX) > richnessPortion) {
         grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
         // }
@@ -401,19 +502,22 @@ class Player {
         //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
         this.x = this.prevX;
         this.y = this.prevY;
-        this.onTimer = false;
-        this.timer = millis();
+        this.turn = false; // Allow enemies to move after move completion
+        this.timer = millis(); // Smoothen motion
         return;
       }
+      // Normal movement
       grid[newY][newX] = 0;
       this.x = newX;
       this.y = newY;
       this.prevX = newX;
       this.prevY = newY;
-      this.onTimer = false;
-      this.timer = millis();
+      this.turn = false; // Allow enemies to move after move completion
+      this.timer = millis(); // Smoothen motion
     }
     else if(millis() - this.timer > moveTime) {
+      // Delay before moving again
+      this.onTimer = false;
       this.turn = true;
     }
   }
@@ -432,6 +536,7 @@ class Player {
 }
 
 let player;
+let enemy;
 let level = 0;
 
 function spawnPlayer() {
@@ -443,9 +548,21 @@ function spawnPlayer() {
   }
 }
 
+function spawnEnemy() {
+  let enemyI = 4;
+  let enemyJ = 10;
+  for(let i = enemyI - 2; i <= enemyI + 2; i++) {
+    for(let j = enemyJ - 2; j <= enemyJ + 2; j++) {
+      grid[i][j] = 0;
+    }
+  }
+  //grid[exitI][exitJ] = cellTypes.exit;
+  enemy = new Enemy(enemyJ, enemyI);
+}
+
 function spawnExit() {
-  exitI = ySize - 5; // 4;
-  exitJ = xSize - 5; // 10;
+  let exitI = ySize - 5; // 4;
+  let exitJ = xSize - 5; // 10;
   for(let i = exitI - 2; i <= exitI + 2; i++) {
     for(let j = exitJ - 2; j <= exitJ + 2; j++) {
       grid[i][j] = 0;
@@ -466,6 +583,7 @@ function generateLevel() {
   insertNodes(grid, nodes);
   generatePerfectMaze();
   spawnPlayer();
+  spawnEnemy();
   spawnExit();
 }
 
@@ -578,7 +696,18 @@ function draw() {
   // }
   displayGrid(grid);
   player.update();
+  enemy.update();
+
+  if(!player.turn) {
+    enemy.turn = true;
+  }
+  else if(!enemy.turn) {
+    player.turn = true;
+    console.log("GO!")
+  }
+
   player.draw();
+  enemy.draw();
 
   if(goNext) {
     generateLevel();
