@@ -68,6 +68,10 @@ function wrapIndices(a, b) {
   return [a,b];
 }
 
+function getAncientness(i, j) {
+  return noise(i/10, j/10, level/10);
+}
+
 function evaluateNextGoL() {
   let newGrid = new Array(ySize);
   generateEmptyGrid(newGrid);
@@ -183,7 +187,7 @@ function randomizeGrid(grid) {
     let row = grid[i];
     for(let j = 0; j < row.length; j++) {
       grid[i][j] = random() < fillPortion;
-      if (noise(i/10, j/10) > richnessPortion) {
+      if (getAncientness(i, j) > richnessPortion) {
         grid[i][j] = 1;
       }
     }
@@ -195,7 +199,7 @@ function roughenTerrain(grid) {
     let row = grid[i];
     for(let j = 0; j < row.length; j++) {
       if (grid[i][j] === 0) {
-        grid[i][j] = noise(i/3, j/3, 20) * (1 - noise(i/10, j/10)**2) * terrainRoughness;
+        grid[i][j] = noise(i/3, j/3, 20) * (1 - getAncientness(i, j)**2) * terrainRoughness;
       }
     }
   }
@@ -222,7 +226,7 @@ function insertNodes(grid, nodes) {
   for(let i = 0; i < grid.length; i+=2) {
     let row = grid[i];
     for(let j = 0; j < row.length; j+=2) {
-      if(noise(i/10, j/10) > richnessPortion) {//&&
+      if(getAncientness(i, j) > richnessPortion) {//&&
         //(getAliveWithin(grid, i, j, 1) >= 8 ||
         //getAliveWithin(grid, i, j, 1) >= 5 && random() > 0.5)) {
         nodes[i/2][j/2] = [1, []];
@@ -378,14 +382,14 @@ class Player {
         this.onTimer = false;
         return;
       }
-      if(grid[newY][newX] >= (1 - noise(newY/10, newX/10))**2) {
-        if(noise(newY/10, newX/10) > richnessPortion) {
-          grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
+      if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2) {
+        if(getAncientness(newY, newX) > richnessPortion) {
+          grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
         }
         else {
           grid[newY][newX] -= 0.6;
         }
-        //grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
+        //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
         this.x = this.prevX;
         this.y = this.prevY;
         this.onTimer = false;
@@ -408,7 +412,7 @@ class Player {
   draw() {
     fill("green");
     circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
-    ancientness = noise(this.prevY/10, this.prevX/10);
+    ancientness = getAncientness(this.prevY, this.prevX);
     // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
     //   inAncientness = true;
     // }
