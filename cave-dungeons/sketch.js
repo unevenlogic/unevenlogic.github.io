@@ -252,80 +252,6 @@ function insertNodes(grid, nodes) {
   }
 }
 
-/**
- * Heap implementation, based on Durr and Vie (2021)
- */
-class Heap {
-  constructor(items, compareFn) {
-    this.heap = [0];
-    this.rank = [];
-    this.compareFn = compareFn;
-    for(let x of items) {
-      this.push(x);
-    }
-  }
-
-  push(x) {
-    let i = this.heap.length;
-    this.heap.push(x);
-    this.up(i);
-    // console.log("PUSH");
-    // console.log(x);
-    // this.print();
-  }
-
-  pop() {
-    let root = this.heap[1]
-    let x = this.heap.pop();
-    if (this.heap.length > 1) {
-      this.heap[1] = x;
-      this.down(1);
-    }
-    // console.log("POP");
-    // console.log(x);
-    // this.print();
-    return root;
-  } 
-
-  up(i) {
-    let x = this.heap[i]
-    while(i > 1 && this.compareFn(x, this.heap[Math.floor(i/2)]) < 0) {
-      this.heap[i] = this.heap[Math.floor(i/2)];
-      i = Math.floor(i/2);
-    }
-    this.heap[i] = x;
-  }
-
-  down(i) {
-    let x = this.heap[i];
-    let n = this.heap.length;
-    while(true) {
-      let left = 2 * i;
-      let right = left + 1;
-      if(right < n && this.compareFn(this.heap[right], x) < 0 && this.compareFn(this.heap[right], this.heap[left]) < 0) {
-        this.heap[i] = this.heap[right]
-        i = right;
-      }
-      else if(left < n && this.compareFn(this.heap[left], x) < 0) {
-        this.heap[i] = this.heap[left];
-        i = left;
-      }
-      else {
-        this.heap[i] = x;
-        return;
-      }
-    }
-  }
-
-  print() {
-    console.log("Priority queue number of elements: ".concat(this.heap.length - 1));
-    for(let i of this.heap) {
-      console.log(i);
-    }
-    console.log(" -- ");
-  }
-}
-
 function getValidEdges(i, j) {
   let arr = [];
   let node = nodes[i][j];
@@ -493,6 +419,7 @@ class Player {
 }
 
 let player;
+let level = 0;
 
 function spawnPlayer() {
   player = new Player(4, 4);
@@ -503,27 +430,27 @@ function spawnPlayer() {
   }
 }
 
+function generateLevel() {
+  level++;
+  generateEmptyGrid(grid);
+  generateEmptyGrid(nodes, Math.floor(xSize / 2), [0]);
+  randomizeGrid(grid);
+  for(let i = 0; i < 3; i++) {
+    grid = evaluateNext(grid);
+  }
+  roughenTerrain(grid);
+  insertNodes(grid, nodes);
+  generatePerfectMaze();
+  spawnPlayer();
+}
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   stroke(0, 50);
   squareSize = min((height - 2*padding) / ySize, (width - 2*padding) / xSize);
   startX = max(padding, width/2 - squareSize * xSize / 2);
   startY = max(padding, height/2 - squareSize * ySize / 2);
-  generateEmptyGrid(grid);
-  //generateEmptyGrid(ancients);
-  generateEmptyGrid(nodes, Math.floor(xSize / 2), [0]);
-  randomizeGrid(grid);
-  //fillAncients(nodes);
-  for(let i = 0; i < 3; i++) {
-    grid = evaluateNext(grid);
-  }
-  roughenTerrain(grid);
-  //grid = getOverlaidGrid(grid, ancients);
-  insertNodes(grid, nodes);
-  generatePerfectMaze();
-  // background("darkred");
-  //window.alert(start_text);
-  spawnPlayer();
+  generateLevel();
 }
 
 function displayGrid(grid) {
@@ -587,7 +514,8 @@ function keyPressed() {
   //   }
   // }
   if(keyCode === ENTER) {
-    grid = evaluateNext(grid);
+    //grid = evaluateNext(grid);
+    generateLevel();
   }
 }
 
