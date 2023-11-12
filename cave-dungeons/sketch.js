@@ -285,7 +285,7 @@ class Heap {
     // console.log(x);
     // this.print();
     return root;
-  }
+  } 
 
   up(i) {
     let x = this.heap[i]
@@ -494,6 +494,15 @@ class Player {
 
 let player;
 
+function spawnPlayer() {
+  player = new Player(4, 4);
+  for(let i = 2; i <= 6; i++) {
+    for(let j = 2; j <= 6; j++) {
+      grid[i][j] = 0;
+    }
+  }
+}
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   stroke(0, 50);
@@ -514,8 +523,7 @@ function setup() {
   generatePerfectMaze();
   // background("darkred");
   //window.alert(start_text);
-  
-  player = new Player(0, 0);
+  spawnPlayer();
 }
 
 function displayGrid(grid) {
