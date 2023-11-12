@@ -19,6 +19,12 @@ const terrainRoughness = 0;
 let inAncientness = false;
 let ancientness = 0;
 
+let goNext = false;
+
+const cellTypes = {
+  exit: 2,
+};
+
 // let clicked = true;
 // let randomSquares = true;
 // let continueEvaluation = false;
@@ -382,13 +388,16 @@ class Player {
         this.onTimer = false;
         return;
       }
-      if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2) {
-        if(getAncientness(newY, newX) > richnessPortion) {
-          grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
-        }
-        else {
-          grid[newY][newX] -= 0.6;
-        }
+      if(grid[newY][newX] === 2) {
+        goNext = true;
+      }
+      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2) {
+        // if(getAncientness(newY, newX) > richnessPortion) {
+        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
+        // }
+        // else {
+        //   grid[newY][newX] -= 0.6;
+        // }
         //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
         this.x = this.prevX;
         this.y = this.prevY;
@@ -435,14 +444,14 @@ function spawnPlayer() {
 }
 
 function spawnExit() {
-  exitI = 4;//ySize - 5;
-  exitJ = 10; //xSize - 5;
+  exitI = ySize - 5; // 4;
+  exitJ = xSize - 5; // 10;
   for(let i = exitI - 2; i <= exitI + 2; i++) {
     for(let j = exitJ - 2; j <= exitJ + 2; j++) {
       grid[i][j] = 0;
     }
   }
-  grid[exitI][exitJ] = 2;
+  grid[exitI][exitJ] = cellTypes.exit;
 }
 
 function generateLevel() {
@@ -477,7 +486,7 @@ function displayGrid(grid) {
       if(0 <= cell_type && cell_type <= 1) {
         fill(255*(1-grid[i][j]));
       }
-      else if(cell_type === 2) {
+      else if(cell_type === cellTypes.exit) {
         fill("blue");
       }
       let xCoord = startX + j * squareSize;
@@ -570,6 +579,11 @@ function draw() {
   displayGrid(grid);
   player.update();
   player.draw();
+
+  if(goNext) {
+    generateLevel();
+    goNext = false;
+  }
   // clicked = false;
   // if(millis() - start_ms < 255 * start_speed && randomSquares) {
   //   background(dark_col, 0, 0, 255 + (start_ms - millis()) / start_speed);
