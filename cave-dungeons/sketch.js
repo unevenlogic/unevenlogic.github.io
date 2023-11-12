@@ -14,7 +14,7 @@ const richnessPortion = 0.5;
 let age = 0;
 
 const noiseScalar = 0.5;
-const terrainRoughness = 1.0;
+const terrainRoughness = 0;
 
 let inAncientness = false;
 let ancientness = 0;
@@ -252,18 +252,139 @@ function insertNodes(grid, nodes) {
   }
 }
 
+/**
+ * Heap implementation, based on Durr and Vie (2021)
+ */
 class Heap {
-  constructor() {
-    this.heap = [];
+  constructor(items, compareFn) {
+    this.heap = [0];
+    this.rank = [];
+    this.compareFn = compareFn;
+    for(let x of items) {
+      this.push(x);
+    }
+  }
+
+  push(x) {
+    let i = this.heap.length;
+    this.heap.push(x);
+    this.up(i);
+    // console.log("PUSH");
+    // console.log(x);
+    // this.print();
+  }
+
+  pop() {
+    let root = this.heap[1]
+    let x = this.heap.pop();
+    if (this.heap.length > 1) {
+      this.heap[1] = x;
+      this.down(1);
+    }
+    // console.log("POP");
+    // console.log(x);
+    // this.print();
+    return root;
+  }
+
+  up(i) {
+    let x = this.heap[i]
+    while(i > 1 && this.compareFn(x, this.heap[Math.floor(i/2)]) < 0) {
+      this.heap[i] = this.heap[Math.floor(i/2)];
+      i = Math.floor(i/2);
+    }
+    this.heap[i] = x;
+  }
+
+  down(i) {
+    let x = this.heap[i];
+    let n = this.heap.length;
+    while(true) {
+      let left = 2 * i;
+      let right = left + 1;
+      if(right < n && this.compareFn(this.heap[right], x) < 0 && this.compareFn(this.heap[right], this.heap[left])) {
+        this.heap[i] = this.heap[right]
+        i = right;
+      }
+      else if(left < n && this.compareFn(this.heap[left], x)) {
+        this.heap[i] = this.heap[left];
+        i = left;
+      }
+      else {
+        this.heap[i] = x;
+        return;
+      }
+    }
+  }
+
+  print() {
+    console.log("Priority queue number of elements: ".concat(this.heap.length - 1));
+    for(let i of this.heap) {
+      console.log(i);
+    }
+    console.log(" -- ");
   }
 }
 
+function getValidEdges(i, j) {
+  let arr = [];
+  let node = nodes[i][j];
+  // if(node[0] !== 1) {
+  //   return arr;
+  // }
+  // node[0] = 2;
+  for(let t of node[1]) {
+    let y = i + t[2];
+    let x = j + t[1];
+    if (nodes[y][x][0] === 1) { 
+      arr.push([t[3], [i, j], [y, x]]);
+    }
+  }
+  // console.log(arr);
+  return arr;
+}
+
 function doPrim(i, j) {
+  //nodes[i][j][0] = 2;
+  let pq = new Heap(getValidEdges(i, j), (a, b) => a[0] - b[0]);
   nodes[i][j][0] = 2;
+  while(pq.heap.length > 1) {
+    let edge = pq.pop();
+    let i0 = edge[1][0];
+    let j0 = edge[1][1];
+    let i1 = edge[2][0];
+    let j1 = edge[2][1];
+    let y = i1 - i0;
+    let x = j1 - j0;
+
+    newNode = nodes[i1][j1];
+    prevNode = nodes[i0][j0];
+
+    if(newNode[0] !== 1) {
+      continue;
+    }
+    newNode[0] = 2;
+
+    // Knock down walls in nodes
+    prevNode[1].find((a) => a[1] === x && a[2] === y)[0] = 1;
+    newNode[1].find((a) => a[1] === -x && a[2] === -y)[0] = 1;
+    grid[2*i0+y][2*j0+x] = 0;
+
+    for(t of getValidEdges(i1, j1)) {
+      pq.push(t);
+    }
+  }
 }
 
 function generatePerfectMaze() {
-  //
+  for(let i = 0; i < nodes.length; i++) {
+    let row = nodes[i];
+    for(let j = 0; j < row.length; j++) {
+      if(nodes[i][j][0] === 1) {
+        doPrim(i, j);
+      }
+    }
+  }
 }
 
 function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not be present in the final version
@@ -336,7 +457,7 @@ class Player {
           grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
         }
         else {
-          grid[newY][newX] -= 0.5;
+          grid[newY][newX] -= 0.6;
         }
         //grid[newY][newX] -= (1 - noise(newY/10, newX/10))**2;
         this.x = this.prevX;
@@ -390,9 +511,10 @@ function setup() {
   roughenTerrain(grid);
   //grid = getOverlaidGrid(grid, ancients);
   insertNodes(grid, nodes);
+  generatePerfectMaze();
   // background("darkred");
   //window.alert(start_text);
-
+  
   player = new Player(0, 0);
 }
 
