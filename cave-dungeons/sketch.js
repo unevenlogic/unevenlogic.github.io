@@ -302,11 +302,11 @@ class Heap {
     while(true) {
       let left = 2 * i;
       let right = left + 1;
-      if(right < n && this.compareFn(this.heap[right], x) < 0 && this.compareFn(this.heap[right], this.heap[left])) {
+      if(right < n && this.compareFn(this.heap[right], x) < 0 && this.compareFn(this.heap[right], this.heap[left]) < 0) {
         this.heap[i] = this.heap[right]
         i = right;
       }
-      else if(left < n && this.compareFn(this.heap[left], x)) {
+      else if(left < n && this.compareFn(this.heap[left], x) < 0) {
         this.heap[i] = this.heap[left];
         i = left;
       }
