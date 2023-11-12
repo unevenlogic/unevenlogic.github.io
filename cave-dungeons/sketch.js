@@ -339,6 +339,7 @@ function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not
 // Classes
 
 const moveTime = 50;
+const enemyMoveTime = 80;
 
 class Enemy {
   constructor(x, y) {
@@ -377,7 +378,7 @@ class Enemy {
       this.onTimer = true; // Add a timer to stall player in midpoint
       this.timer = millis();
     }
-    else if(this.turn && this.onTimer && millis() - this.timer > moveTime) {
+    else if(this.turn && this.onTimer && millis() - this.timer > enemyMoveTime) {
       // Completion and outcome of movement
       let newX = 2 * this.x - this.prevX;
       let newY = 2 * this.y - this.prevY;
@@ -416,7 +417,7 @@ class Enemy {
       this.turn = false; // Allow enemies to move after move completion
       this.timer = millis(); // Smoothen motion
     }
-    else if(millis() - this.timer > moveTime) {
+    else if(millis() - this.timer > enemyMoveTime) {
       // Delay before moving again
       this.onTimer = false;
       this.turn = true;
@@ -536,7 +537,7 @@ class Player {
 }
 
 let player;
-let enemy;
+let enemies = [];
 let level = 0;
 
 function spawnPlayer() {
@@ -548,16 +549,21 @@ function spawnPlayer() {
   }
 }
 
+const numEnemies = 4;
+
 function spawnEnemy() {
-  let enemyI = 4;
-  let enemyJ = 10;
-  for(let i = enemyI - 2; i <= enemyI + 2; i++) {
-    for(let j = enemyJ - 2; j <= enemyJ + 2; j++) {
-      grid[i][j] = 0;
+  enemies = [];
+  for(let n = 0; n < numEnemies; n++) {
+    let enemyI = Math.floor(random(ySize));
+    let enemyJ = Math.floor(random(xSize));
+    for(let i = Math.max(0, enemyI - 1); i <= Math.min(enemyI + 1, ySize - 1); i++) {
+      for(let j = Math.max(0, enemyJ - 1); j <= Math.min(enemyJ + 1, xSize - 1); j++) {
+        grid[i][j] = 0;
+      }
     }
+    //grid[exitI][exitJ] = cellTypes.exit;
+    enemies.push(new Enemy(enemyJ, enemyI));
   }
-  //grid[exitI][exitJ] = cellTypes.exit;
-  enemy = new Enemy(enemyJ, enemyI);
 }
 
 function spawnExit() {
@@ -696,18 +702,20 @@ function draw() {
   // }
   displayGrid(grid);
   player.update();
-  enemy.update();
 
-  if(!player.turn) {
-    enemy.turn = true;
-  }
-  else if(!enemy.turn) {
-    player.turn = true;
-    console.log("GO!")
-  }
+  // if(!player.turn) {
+  //   enemy.turn = true;
+  // }
+  // else if(!enemy.turn) {
+  //   player.turn = true;
+  //   console.log("GO!")
+  // }
 
   player.draw();
-  enemy.draw();
+  for(enemy of enemies) {
+    enemy.update();
+    enemy.draw();
+  }
 
   if(goNext) {
     generateLevel();
