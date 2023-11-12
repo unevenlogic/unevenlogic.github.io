@@ -434,6 +434,17 @@ function spawnPlayer() {
   }
 }
 
+function spawnExit() {
+  exitI = 4;//ySize - 5;
+  exitJ = 10; //xSize - 5;
+  for(let i = exitI - 2; i <= exitI + 2; i++) {
+    for(let j = exitJ - 2; j <= exitJ + 2; j++) {
+      grid[i][j] = 0;
+    }
+  }
+  grid[exitI][exitJ] = 2;
+}
+
 function generateLevel() {
   level++;
   generateEmptyGrid(grid);
@@ -446,6 +457,7 @@ function generateLevel() {
   insertNodes(grid, nodes);
   generatePerfectMaze();
   spawnPlayer();
+  spawnExit();
 }
 
 function setup() {
@@ -461,7 +473,13 @@ function displayGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
     for(let j = 0; j < row.length; j++) {
-      fill(255*(1-grid[i][j]));
+      let cell_type = grid[i][j];
+      if(0 <= cell_type && cell_type <= 1) {
+        fill(255*(1-grid[i][j]));
+      }
+      else if(cell_type === 2) {
+        fill("blue");
+      }
       let xCoord = startX + j * squareSize;
       let yCoord = startY + i * squareSize;
       // if(clicked &&
