@@ -9,7 +9,10 @@
 - [Sounds and Images](05-sound)
 - [Terrain Generation](06-terrain)
 - [Draw a Grid](07-2d-grid)
+- [Platformer Demo](08-platformer)
 - [Dog OOP Demo](09-dog)
+- [Walker OOP Demo](10-walker)
+
 
 ## Projects
 
