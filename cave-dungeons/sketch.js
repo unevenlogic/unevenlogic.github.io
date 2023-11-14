@@ -352,6 +352,7 @@ class Entity {
     this.onTimer = false;
     this.moveTime = moveTime;
     this.colour = "black";
+    this.minePower = 1;
   }
 
   get_direction() {
@@ -367,7 +368,7 @@ class Entity {
         this.timer = millis();
       }
     }
-    else if(this.turn && this.onTimer && millis() - this.timer > enemyMoveTime) {
+    else if(this.turn && this.onTimer && millis() - this.timer > this.moveTime) {
       // Completion and outcome of movement
       let newX = 2 * this.x - this.prevX;
       let newY = 2 * this.y - this.prevY;
@@ -381,11 +382,11 @@ class Entity {
         // Entered an exit
         goNext = true; // Proceed to next level
       }
-      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2 * 0.2) {
+      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2 * this.minePower) {
         // Mining a block
 
         // if(getAncientness(newY, newX) > richnessPortion) {
-        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2 * 0.2;
+        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2 * this.minePower;
         // }
         // else {
         //   grid[newY][newX] -= 0.6;
@@ -406,7 +407,7 @@ class Entity {
       this.turn = false; // Allow enemies to move after move completion
       this.timer = millis(); // Smoothen motion
     }
-    else if(millis() - this.timer > enemyMoveTime) {
+    else if(millis() - this.timer > this.moveTime) {
       // Delay before moving again
       this.onTimer = false;
       this.turn = true;
@@ -414,7 +415,7 @@ class Entity {
   }
 
   draw() {
-    fill("orange");
+    fill(this.colour);
     circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
     // ancientness = getAncientness(this.prevY, this.prevX);
     // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
@@ -426,15 +427,12 @@ class Entity {
   }
 }
 
-class Enemy {
+class Enemy extends Entity {
   constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.prevX = x;
-    this.prevY = y;
-    this.timer = 0;
-    this.turn = false;
-    this.onTimer = false;
+    super(x, y);
+    this.colour = "orange";
+    this.moveTime = enemyMoveTime;
+    this.minePower = 0.2;
   }
 
   get_direction() {
@@ -456,79 +454,6 @@ class Enemy {
       endTurn = true;
     }
     return endTurn;
-    // else if(xDist >= yDist) {
-    //   return [xDisp / xDist, 0];
-    // }
-    // else {
-    //   return [0, yDisp / yDist];
-    // }
-  }
-
-  update() {
-    if(this.turn && !this.onTimer) {
-      // Enemy movement to midpoint
-      if(this.get_direction()) {
-        // this.turn = false;
-        this.onTimer = true; // Add a timer to stall player in midpoint
-        this.timer = millis();
-      }
-    }
-    else if(this.turn && this.onTimer && millis() - this.timer > enemyMoveTime) {
-      // Completion and outcome of movement
-      let newX = 2 * this.x - this.prevX;
-      let newY = 2 * this.y - this.prevY;
-      if(newX < 0 || newX >= xSize || newY < 0 || newY >= ySize) {
-        this.x = this.prevX;
-        this.y = this.prevY;
-        this.turn = false; // End turn
-        return;
-      }
-      if(grid[newY][newX] === 2) {
-        // Entered an exit
-        goNext = true; // Proceed to next level
-      }
-      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2 * 0.2) {
-        // Mining a block
-
-        // if(getAncientness(newY, newX) > richnessPortion) {
-        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2 * 0.2;
-        // }
-        // else {
-        //   grid[newY][newX] -= 0.6;
-        // }
-        //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
-        this.x = this.prevX;
-        this.y = this.prevY;
-        this.turn = false; // Allow enemies to move after move completion
-        this.timer = millis(); // Smoothen motion
-        return;
-      }
-      // Normal movement
-      grid[newY][newX] = 0;
-      this.x = newX;
-      this.y = newY;
-      this.prevX = newX;
-      this.prevY = newY;
-      this.turn = false; // Allow enemies to move after move completion
-      this.timer = millis(); // Smoothen motion
-    }
-    else if(millis() - this.timer > enemyMoveTime) {
-      // Delay before moving again
-      this.onTimer = false;
-      this.turn = true;
-    }
-  }
-
-  draw() {
-    fill("orange");
-    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
-    // ancientness = getAncientness(this.prevY, this.prevX);
-    // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
-    //   inAncientness = true;
-    // }
-    // else {
-    //   inAncientness = false;
-    // }
   }
 }
 
