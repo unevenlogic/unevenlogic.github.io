@@ -341,7 +341,7 @@ function getOverlaidGrid(grid, overlay) { // Used mostly for debugging; will not
 const moveTime = 50;
 const enemyMoveTime = 80;
 
-class Enemy {
+class Entity {
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -350,33 +350,22 @@ class Enemy {
     this.timer = 0;
     this.turn = false;
     this.onTimer = false;
+    this.moveTime = moveTime;
+    this.colour = "black";
   }
 
   get_direction() {
-    let xDisp = player.x - this.x;
-    let yDisp = player.y - this.y;
-    let xDist = Math.abs(xDisp);
-    let yDist = Math.abs(yDisp);
-    if(xDisp === 0 && yDisp === 0) {
-      goNext = true;
-      return [0, 0];
-    }
-    else if(xDist >= yDist) {
-      return [xDisp / xDist, 0];
-    }
-    else {
-      return [0, yDisp / yDist];
-    }
+
   }
 
   update() {
     if(this.turn && !this.onTimer) {
       // Enemy movement to midpoint
-      let t = this.get_direction();
-      this.x += t[0] / 2;
-      this.y += t[1] / 2;
-      this.onTimer = true; // Add a timer to stall player in midpoint
-      this.timer = millis();
+      if(this.get_direction()) {
+        // this.turn = false;
+        this.onTimer = true; // Add a timer to stall player in midpoint
+        this.timer = millis();
+      }
     }
     else if(this.turn && this.onTimer && millis() - this.timer > enemyMoveTime) {
       // Completion and outcome of movement
@@ -437,6 +426,121 @@ class Enemy {
   }
 }
 
+class Enemy {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.prevX = x;
+    this.prevY = y;
+    this.timer = 0;
+    this.turn = false;
+    this.onTimer = false;
+  }
+
+  get_direction() {
+    let xDisp = player.x - this.x;
+    let yDisp = player.y - this.y;
+    let xDist = Math.abs(xDisp);
+    let yDist = Math.abs(yDisp);
+    let endTurn = false;
+    if(xDisp === 0 && yDisp === 0) {
+      goNext = true;
+    }
+
+    if(xDisp !== 0) {
+      this.x += xDisp / (2 * xDist);
+      endTurn = true;
+    }
+    if(yDisp !== 0) {
+      this.y += yDisp / (2 * yDist);
+      endTurn = true;
+    }
+    return endTurn;
+    // else if(xDist >= yDist) {
+    //   return [xDisp / xDist, 0];
+    // }
+    // else {
+    //   return [0, yDisp / yDist];
+    // }
+  }
+
+  update() {
+    if(this.turn && !this.onTimer) {
+      // Enemy movement to midpoint
+      if(this.get_direction()) {
+        // this.turn = false;
+        this.onTimer = true; // Add a timer to stall player in midpoint
+        this.timer = millis();
+      }
+    }
+    else if(this.turn && this.onTimer && millis() - this.timer > enemyMoveTime) {
+      // Completion and outcome of movement
+      let newX = 2 * this.x - this.prevX;
+      let newY = 2 * this.y - this.prevY;
+      if(newX < 0 || newX >= xSize || newY < 0 || newY >= ySize) {
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.turn = false; // End turn
+        return;
+      }
+      if(grid[newY][newX] === 2) {
+        // Entered an exit
+        goNext = true; // Proceed to next level
+      }
+      else if(grid[newY][newX] >= (1 - getAncientness(newY, newX))**2 * 0.2) {
+        // Mining a block
+
+        // if(getAncientness(newY, newX) > richnessPortion) {
+        grid[newY][newX] -= (1 - getAncientness(newY, newX))**2 * 0.2;
+        // }
+        // else {
+        //   grid[newY][newX] -= 0.6;
+        // }
+        //grid[newY][newX] -= (1 - getAncientness(newY, newX))**2;
+        this.x = this.prevX;
+        this.y = this.prevY;
+        this.turn = false; // Allow enemies to move after move completion
+        this.timer = millis(); // Smoothen motion
+        return;
+      }
+      // Normal movement
+      grid[newY][newX] = 0;
+      this.x = newX;
+      this.y = newY;
+      this.prevX = newX;
+      this.prevY = newY;
+      this.turn = false; // Allow enemies to move after move completion
+      this.timer = millis(); // Smoothen motion
+    }
+    else if(millis() - this.timer > enemyMoveTime) {
+      // Delay before moving again
+      this.onTimer = false;
+      this.turn = true;
+    }
+  }
+
+  draw() {
+    fill("orange");
+    circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, 20);
+    // ancientness = getAncientness(this.prevY, this.prevX);
+    // if(noise(this.prevY/10, this.prevX/10) > richnessPortion) {
+    //   inAncientness = true;
+    // }
+    // else {
+    //   inAncientness = false;
+    // }
+  }
+}
+
+const movementKeys = [87, 65, 83, 68];
+
+const keyMovement = {
+  87: [0, -1],
+  65: [-1, 0],
+  83: [0, 1],
+  68: [1, 0],
+};
+
 class Player {
   constructor(x, y) {
     this.x = x;
@@ -448,30 +552,24 @@ class Player {
     this.onTimer = false;
   }
 
+  get_direction() {
+    let endTurn = false;
+    let xDisp = 0;
+    let yDisp = 0;
+    for(let k of movementKeys) {
+      if (keyIsDown(k)) {
+        endTurn = true;
+        this.x += keyMovement[k][0] / 2;
+        this.y += keyMovement[k][1] / 2;
+      }
+    }
+    return endTurn;
+  }
+
   update() {
     if(this.turn && !this.onTimer && keyIsPressed) {
       // Player movement to midpoint
-      let endTurn = true;
-      let xDisp = 0;
-      let yDisp = 0;
-      switch(key) {
-      case "w":
-        this.y -= 0.5;
-        break;
-      case "s":
-        this.y += 0.5;
-        break;
-      case "a":
-        this.x -= 0.5;
-        break;
-      case "d":
-        this.x += 0.5;
-        break;
-      default:
-        endTurn = false;
-      }
-      //console.log(key);
-      if(endTurn) {
+      if(this.get_direction()) {
         // this.turn = false;
         this.onTimer = true; // Add a timer to stall player in midpoint
         this.timer = millis();
