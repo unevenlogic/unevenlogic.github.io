@@ -1,6 +1,26 @@
 // Cave Dungeons
 // Robert Yang
 // Nov. 13, 2023
+//
+// Use WASD to move; diagonal movement is enabled.
+// Your goal is to reach the blue square.
+// Mining is enabled (activate by attempting to move into a wall), but
+// labyrinth walls are tougher than cave walls.
+// There are two types of enemies. Normal ones move as fast as you but can't
+// mine walls; iron claws move slower but mine at half your speed.
+// Normal enemies are introduced every other level starting from level one.
+// Iron claws are introduced every four levels starting from level four.
+// The player starts from the tutorial level, but subsequent deaths from
+// enemies land the player back at level one (note that players can still touch
+// enemies without dying; they just can't stand still).
+//
+// Extras for experts:
+// - Min heap implementation
+// - Prim's algorithm implementation
+// - Labyrinth generation with the above two
+// - Cave terrain generation with celluar automata
+// - Inheritence
+// - An enum (kind of?)
 
 let squareSize; // Side length of squares
 const padding = 10; // Minimum padding between grid and edges of screen
@@ -30,9 +50,15 @@ The enemies get harder each level; don't let them catch you.
 
 Click OK to start`;
 
-let grid = new Array(ySize);
-let nodes = new Array(Math.floor(ySize / 2));
+let grid = new Array(ySize); // The grid that is displayed
+let nodes = new Array(Math.floor(ySize / 2)); // Labyrinth generation nodes
 
+/**
+ * Wraps the coordinates of the grid at the edges.
+ * @param {number} a The i-index.
+ * @param {number} b The j-index.
+ * @returns The wrapped coordinates.
+ */
 function wrapIndices(a, b) {
   a += ySize;
   a %= ySize;
@@ -41,42 +67,27 @@ function wrapIndices(a, b) {
   return [a,b];
 }
 
+/**
+ * Gets the ancientness of a location.
+ * Ancient places were carved into labyrinths by long-lost civilizations, and
+ * the walls were hardened before the grid was buried and carved up by erosion
+ * and caves.
+ * @param {number} i The i-index.
+ * @param {number} j The j-index.
+ * @returns The ancientness value of a location.
+ */
 function getAncientness(i, j) {
   return noise(i/10, j/10, level/10);
 }
 
-function evaluateNextGoL() {
-  let newGrid = new Array(ySize);
-  generateEmptyGrid(newGrid);
-  for(let i = 0; i < grid.length; i++) {
-    let row = grid[i];
-    for(let j = 0; j < row.length; j++) {
-      let alive = row[j];
-      let others = 0;
-      for(let iDisp of [-1,0,1]) {
-        for(let jDisp of [-1,0,1]) {
-          if(iDisp === 0 && jDisp === 0) {
-            continue;
-          }
-          let a = i + iDisp;
-          let b = j + jDisp;
-          let newIndices = wrapIndices(a,b);
-          a = newIndices[0];
-          b = newIndices[1];
-          others += grid[a][b];
-        }
-      }
-      if(alive) {
-        newGrid[i][j] = 2 <= others & others <= 3;
-      }
-      else {
-        newGrid[i][j] = !!(others === 3);
-      }
-    }
-  }
-  return newGrid;
-}
-
+/**
+ * Gets the number of 1's within a certain radius around a cell in a grid.
+ * @param {Array.<Array.<number>>} grid The grid that is checked.
+ * @param {number} i The i-index.
+ * @param {number} j The j-index.
+ * @param {number} r The radius of checking.
+ * @returns The number of 1's within the radius.
+ */
 function getAliveWithin(grid, i, j, r) {
   let acc = 0;
   for(let iDisp = -r; iDisp <= r; iDisp++) {
@@ -95,6 +106,11 @@ function getAliveWithin(grid, i, j, r) {
   return acc;
 }
 
+/**
+ * Evaluates a cave celluar automata into a new grid.
+ * @param {Array.<Array.<number>>} newGrid An empty grid.
+ * @param {Array.<Array.<number>>} grid The grid that is used for evaluation.
+ */
 function evaluateCave(newGrid, grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
@@ -114,6 +130,11 @@ function evaluateCave(newGrid, grid) {
   }
 }
 
+/**
+ * Returns a grid that has been evaluated by evaluateCave.
+ * @param {Array.<Array.<number>>} grid The grid to evaluate.
+ * @returns The new grid.
+ */
 function evaluateNext(grid) {
   let newGrid = new Array(ySize);
   generateEmptyGrid(newGrid);
@@ -121,12 +142,22 @@ function evaluateNext(grid) {
   return newGrid;
 }
 
+/**
+ * Converts an empty array to a uniform 2d array.
+ * @param {Array} grid The grid to fill.
+ * @param {number} x The number of cells per row.
+ * @param {number} toFill The number to fill the cells with.
+ */
 function generateEmptyGrid(grid, x = xSize, toFill = 0) {
   for(let i = 0; i < ySize; i++) {
     grid[i] = new Array(x).fill(toFill);
   }
 }
 
+/**
+ * Randomizes the grid while setting the "ancient" parts of it black.
+ * @param {Array.<Array.<number>>} grid The grid to randomize.
+ */
 function randomizeGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];
@@ -149,7 +180,6 @@ function randomizeGrid(grid) {
 //     }
 //   }
 // }
-
 
 const dirs = [[0,-1], [1,0], [0,1], [-1,0]]; // N, E, S, W
 
@@ -179,13 +209,18 @@ function insertNodes(grid, nodes) {
         if(x < 0 || x >= row.length || y < 0 || y >= nodes.length || nodes[y][x][0] === 0) {
           continue;
         }
-        let otherNode = nodes[y][x];
-        nodes[i][j][1].push([0, dir[0], dir[1], random()]);
+        thisNode[1].push([0, dir[0], dir[1], random()]);
       }
     }
   }
 }
 
+/**
+ * Gets the directions of adjacent unvisited nodes.
+ * @param {number} i The i-index.
+ * @param {number} j The j-index.
+ * @returns The directions that can be taken from a visited node.
+ */
 function getValidEdges(i, j) {
   let arr = [];
   let node = nodes[i][j];
@@ -199,10 +234,16 @@ function getValidEdges(i, j) {
   return arr;
 }
 
+/**
+ * Runs Prim's algorithm and generates a local maze.
+ * @param {number} i The i-index.
+ * @param {number} j The j-index.
+ */
 function doPrim(i, j) {
   let pq = new Heap(getValidEdges(i, j), (a, b) => a[0] - b[0]);
   nodes[i][j][0] = 2;
   while(pq.heap.length > 1) {
+    // Get the node with the smallest edge weight
     let edge = pq.pop();
     let i0 = edge[1][0];
     let j0 = edge[1][1];
@@ -214,7 +255,7 @@ function doPrim(i, j) {
     newNode = nodes[i1][j1];
     prevNode = nodes[i0][j0];
 
-    if(newNode[0] !== 1) {
+    if(newNode[0] !== 1) { // Already visited
       continue;
     }
     newNode[0] = 2;
@@ -224,12 +265,16 @@ function doPrim(i, j) {
     newNode[1].find((a) => a[1] === -x && a[2] === -y)[0] = 1;
     grid[2*i0+y][2*j0+x] = 0;
 
+    // Pushes unvisited adjacent nodes into the heap
     for(t of getValidEdges(i1, j1)) {
       pq.push(t);
     }
   }
 }
 
+/**
+ * Runs Prim's algorithm from each unvisited node.
+ */
 function generatePerfectMaze() {
   for(let i = 0; i < nodes.length; i++) {
     let row = nodes[i];
@@ -241,10 +286,19 @@ function generatePerfectMaze() {
   }
 }
 
+/**
+ * Gets the noise-determined ancientness value.
+ * @param {number} i The i-index.
+ * @param {number} j The j-index.
+ * @returns The ancientness value.
+ */
 function getMiningEffectiveness(i, j) {
   return (1 - getAncientness(i, j))**4;
 }
 
+/**
+ * Spawns the exit cell.
+ */
 function spawnExit() {
   let exitI = ySize - 5;
   let exitJ = xSize - 5;
@@ -256,6 +310,9 @@ function spawnExit() {
   grid[exitI][exitJ] = cellTypes.exit;
 }
 
+/**
+ * Generates a new level.
+ */
 function generateLevel() {
   level++;
   numEnemies = Math.floor((level + 1) * numEnemiesScaling);
@@ -269,7 +326,7 @@ function generateLevel() {
   insertNodes(grid, nodes);
   generatePerfectMaze();
   spawnPlayer();
-  spawnEnemy();
+  spawnEnemies();
   spawnExit();
 }
 
@@ -284,6 +341,10 @@ function setup() {
   window.alert(start_text);
 }
 
+/**
+ * Displays a grid.
+ * @param {Array.<Array.<number>>} grid The grid to display.
+ */
 function displayGrid(grid) {
   for(let i = 0; i < grid.length; i++) {
     let row = grid[i];

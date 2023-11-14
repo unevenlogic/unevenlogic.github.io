@@ -1,24 +1,28 @@
-const moveTime = 50;
-const ironClawMoveTime = 80;
-const entityFilling = 0.8;
-const random_possibilities = [-0.5, 0, 0.5]; // Random places for the enemy to move
-const movementKeys = [87, 65, 83, 68];
-const keyMovement = {
+// Entities for cave dungeons
+
+const entityFilling = 0.8; // Portion of length of square that entities take
+const moveTime = 50; // Amount of time taken between actions
+const ironClawMoveTime = 80; // move time for iron claws
+const random_possibilities = [-0.5, 0, 0.5]; // Random places for enemies to move
+const movementKeys = [87, 65, 83, 68]; // WASD keys
+const keyMovement = { // The corresponding displacements to the WASD keys
   87: [0, -1],
   65: [-1, 0],
   83: [0, 1],
   68: [1, 0],
 };
-const numEnemiesScaling = 0.5;
-const numIronClawsScaling = 0.25;
+const numEnemiesScaling = 0.5; // Number of enemies introduced per round
+const numIronClawsScaling = 0.25; // Number of iron claws introduced per round
 
-let numEnemies = 1;
-let numIronClaws = 3;
+let numEnemies; // Number of enemies
+let numIronClaws; // Number of iron claws
 
-let player;
-let enemies = [];
+let player; // The player
+let enemies = []; // The enemies
 
-
+/**
+ * Generic entity (e.g. players and enemies).
+ */
 class Entity {
   constructor(x, y) {
     this.x = x;
@@ -28,24 +32,35 @@ class Entity {
     this.prevX = x;
     this.prevY = y;
     this.timer = 0;
-    this.turn = false;
-    this.onTimer = false;
-    this.moveTime = moveTime;
-    this.colour = "black";
-    this.minePower = 1;
-    this.outcome = "";
-    this.type = "";
+    this.turn = false; // Whether the entity can or is moving
+    this.onTimer = false; // Whether the entity is moving or resting
+    this.moveTime = moveTime; // The waiting time for the entity
+    this.colour = "black"; // The colour to render the enemy
+    this.minePower = 1; // The mining power of the entity
+    this.outcome = ""; // The most recent environment response to movement
   }
 
+  /**
+   * Gets the next direction of the entity.
+   */
   get_direction() {} // Will be overwritten by children
 
+  /**
+   * Triggered when the entity touches an exit.
+   */
   go_next() {} // Also will be overwritten by children
 
+  /**
+   * Push entity back into previous location.
+   */
   force_back() {
     this.x = this.prevX;
     this.y = this.prevY;
   }
 
+  /**
+   * Push entity forwards to destination square.
+   */
   proceed() {
     this.x = this.newX;
     this.y = this.newY;
@@ -53,6 +68,9 @@ class Entity {
     this.prevY = this.newY;
   }
 
+  /**
+   * Determines the current state of the entity.
+   */
   update() {
     if(this.turn && !this.onTimer) {
       // Enemy movement to midpoint
@@ -97,12 +115,18 @@ class Entity {
     }
   }
 
+  /**
+   * Draws the entity.
+   */
   draw() {
     fill(this.colour);
     circle(startX + (this.x+0.5) * squareSize, startY + (this.y+0.5) * squareSize, squareSize * entityFilling);
   }
 }
 
+/**
+ * Enemy entity; chases the player, moving randomly if hitting a wall.
+ */
 class Enemy extends Entity {
   constructor(x, y) {
     super(x, y);
@@ -124,7 +148,7 @@ class Enemy extends Entity {
       let yDist = Math.abs(yDisp);
       let endTurn = false;
       if(xDisp === 0 && yDisp === 0) {
-        gameState = "death";
+        gameState = "death"; // The enemy is on the player
       }
 
       if(xDisp !== 0) {
@@ -140,6 +164,9 @@ class Enemy extends Entity {
   }
 }
 
+/**
+ * Slower but more powerful enemy that can mine walls.
+ */
 class IronClaw extends Enemy {
   constructor(x, y) {
     super(x, y);
@@ -150,6 +177,9 @@ class IronClaw extends Enemy {
   }
 }
 
+/**
+ * Player entity.
+ */
 class Player extends Entity {
   constructor(x, y) {
     super(x, y);
@@ -178,6 +208,9 @@ class Player extends Entity {
   }
 }
 
+/**
+ * Spawns the player.
+ */
 function spawnPlayer() {
   player = new Player(4, 4);
   for(let i = 2; i <= 6; i++) {
@@ -187,7 +220,10 @@ function spawnPlayer() {
   }
 }
 
-function spawnEnemy() {
+/**
+ * Spawns the enemies.
+ */
+function spawnEnemies() {
   enemies = [];
   for(let n = 0; n < numEnemies; n++) {
     let enemyI = Math.floor(random(ySize/3, ySize));

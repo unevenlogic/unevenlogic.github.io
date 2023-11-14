@@ -1,5 +1,5 @@
 /**
- * Heap implementation, based on Durr and Vie (2021)
+ * Min-heap implementation, based on Durr and Vie (2021)
  */
 class Heap {
     constructor(items, compareFn) {
@@ -11,15 +11,20 @@ class Heap {
       }
     }
   
+    /**
+     * Pushes an element into the heap.
+     * @param {any} x The element to push.
+     */
     push(x) {
       let i = this.heap.length;
       this.heap.push(x);
       this.up(i);
-      // console.log("PUSH");
-      // console.log(x);
-      // this.print();
     }
   
+    /**
+     * Pops the top element from the heap.
+     * @returns The top element.
+     */
     pop() {
       let root = this.heap[1]
       let x = this.heap.pop();
@@ -27,12 +32,13 @@ class Heap {
         this.heap[1] = x;
         this.down(1);
       }
-      // console.log("POP");
-      // console.log(x);
-      // this.print();
       return root;
     } 
   
+    /**
+     * Enforces heap structure, starting from an element and going up.
+     * @param {number} i The index of the element.
+     */
     up(i) {
       let x = this.heap[i]
       while(i > 1 && this.compareFn(x, this.heap[Math.floor(i/2)]) < 0) {
@@ -42,13 +48,19 @@ class Heap {
       this.heap[i] = x;
     }
   
+    /**
+     * Enforces heap structure, starting from an element and going down.
+     * Also known as heapify.
+     * @param {number} i The index of the element.
+     */
     down(i) {
       let x = this.heap[i];
       let n = this.heap.length;
       while(true) {
         let left = 2 * i;
         let right = left + 1;
-        if(right < n && this.compareFn(this.heap[right], x) < 0 && this.compareFn(this.heap[right], this.heap[left]) < 0) {
+        if(right < n && this.compareFn(this.heap[right], x) < 0
+          && this.compareFn(this.heap[right], this.heap[left]) < 0) {
           this.heap[i] = this.heap[right]
           i = right;
         }
@@ -63,8 +75,11 @@ class Heap {
       }
     }
   
+    /**
+     * Prints the number of elements, followed by each element.
+     */
     print() {
-      console.log("Priority queue number of elements: ".concat(this.heap.length - 1));
+      console.log("Number of elements: ".concat(this.heap.length - 1));
       for(let i of this.heap) {
         console.log(i);
       }
