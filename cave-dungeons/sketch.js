@@ -27,13 +27,13 @@ const cellTypes = {
   exit: 2,
 };
 
-// const start_text = `Press Enter to evaluate one step
-// Press Space to toggle auto-evaluation
-// Press the squares to flip their state
-// Press E to empty the grid
-// Press R to randomize the grid
+const start_text = `Use WASD to move; diagonal movement is enabled.
+Your goal is to reach the blue square.
+Mining is enabled, but labyrinth walls are tougher than cave walls.
 
-// Click anywhere to start`;
+The enemies get harder each level; don't let them catch you.
+
+Click OK to start`;
 
 let grid = new Array(ySize);
 let nodes = new Array(Math.floor(ySize / 2));
@@ -569,6 +569,7 @@ function setup() {
   startY = max(padding, height/2 - squareSize * ySize / 2);
   generateLevel();
   textSize(60);
+  window.alert(start_text);
 }
 
 function displayGrid(grid) {
