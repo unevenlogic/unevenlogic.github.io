@@ -10,8 +10,8 @@
 // mine walls; iron claws move slower but mine at half your speed.
 // Normal enemies are introduced every other level starting from level one.
 // Iron claws are introduced every four levels starting from level four.
-// The player starts from the tutorial level, but subsequent deaths from
-// enemies land the player back at level one (note that players can still touch
+// The player starts from the tutorial level, and subsequent deaths from
+// enemies knock the player back a level (note that players can still touch
 // enemies without dying; they just can't stand still).
 //
 // Extras for experts:
@@ -19,8 +19,15 @@
 // - Prim's algorithm implementation
 // - Labyrinth generation with the above two
 // - Cave terrain generation with celluar automata
+// - Putting the two generation types together with ancientness perlin noise
 // - Inheritence
 // - An enum (kind of?)
+//
+// Debug keys (enable by setting below to true):
+// - Enter: skip a level
+// - X: kill the player and jump back a level (won't go below 0)
+
+const DEBUG = false; // Set true to enable debug keys
 
 let squareSize; // Side length of squares
 const padding = 10; // Minimum padding between grid and edges of screen
@@ -170,17 +177,6 @@ function randomizeGrid(grid) {
   }
 }
 
-// function roughenTerrain(grid) {
-//   for(let i = 0; i < grid.length; i++) {
-//     let row = grid[i];
-//     for(let j = 0; j < row.length; j++) {
-//       if (grid[i][j] === 0) {
-//         grid[i][j] = noise(i/3, j/3, 20) * (1 - getAncientness(i, j)**2) * terrainRoughness;
-//       }
-//     }
-//   }
-// }
-
 const dirs = [[0,-1], [1,0], [0,1], [-1,0]]; // N, E, S, W
 
 function insertNodes(grid, nodes) {
@@ -206,7 +202,8 @@ function insertNodes(grid, nodes) {
       for(let dir of dirs) {
         let y = i + dir[1];
         let x = j + dir[0];
-        if(x < 0 || x >= row.length || y < 0 || y >= nodes.length || nodes[y][x][0] === 0) {
+        if(x < 0 || x >= row.length || y < 0 
+          || y >= nodes.length || nodes[y][x][0] === 0) {
           continue;
         }
         thisNode[1].push([0, dir[0], dir[1], random()]);
@@ -314,17 +311,24 @@ function spawnExit() {
  * Generates a new level.
  */
 function generateLevel() {
+  // Handle level and number of enemies
   level++;
   numEnemies = Math.floor((level + 1) * numEnemiesScaling);
   numIronClaws = Math.floor(level * numIronClawsScaling);
+
+  // Generate caves
   generateEmptyGrid(grid);
   generateEmptyGrid(nodes, Math.floor(xSize / 2), [0]);
   randomizeGrid(grid);
   for(let i = 0; i < 3; i++) {
     grid = evaluateNext(grid);
   }
+
+  // Generate maze
   insertNodes(grid, nodes);
   generatePerfectMaze();
+
+  // Spawn everything
   spawnPlayer();
   spawnEnemies();
   spawnExit();
@@ -364,8 +368,13 @@ function displayGrid(grid) {
 }
 
 function keyPressed() {
-  if(keyCode === ENTER) {
-    generateLevel();
+  if(DEBUG) {
+    if(keyCode === ENTER) {
+      generateLevel();
+    }
+    else if(key === "x") {
+      gameState = "death";
+    }
   }
 }
 
@@ -378,6 +387,7 @@ function windowResized() {
 
 function draw() {
   if(gameState === "death") {
+    // The player has died
     background(100, 0, 0, 100);
     fill("white");
     textAlign(CENTER, CENTER);
@@ -386,15 +396,20 @@ function draw() {
     gameState = "respawning";
   }
   else if(gameState === "respawning") {
+    // The player is shown the death screen while the background fades to red
     background(100, 0, 0, 5);
     text("YOU DIED", width/2, height/2)
     if(millis() - respawnTimer >= respawnDuration) {
-      level = 0;
+      level -= 2;
+      if(level < -1) {
+        level = -1;
+      }
       generateLevel();
       gameState = "default";
     }
   }
   else {
+    // The game proceeds as normal
     background(player.get_ancientness()*150, 50, 50);
     displayGrid(grid);
     player.update();
@@ -407,6 +422,7 @@ function draw() {
     fill("skyblue");
     text("Level ".concat(level), width - 2*padding, 2*padding);
     if(gameState === "next") {
+      // Enter the next level
       generateLevel();
       gameState = "default";
     }
