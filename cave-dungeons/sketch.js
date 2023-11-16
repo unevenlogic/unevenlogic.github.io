@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // Cave Dungeons
 // Robert Yang
 // Nov. 13, 2023
@@ -27,7 +28,7 @@
 // - Enter: skip a level
 // - X: kill the player and jump back a level (won't go below 0)
 
-const DEBUG = false; // Set true to enable debug keys
+const DEBUG = true; // Set true to enable debug keys
 
 let squareSize; // Side length of squares
 const padding = 10; // Minimum padding between grid and edges of screen
@@ -249,8 +250,8 @@ function doPrim(i, j) {
     let y = i1 - i0;
     let x = j1 - j0;
 
-    newNode = nodes[i1][j1];
-    prevNode = nodes[i0][j0];
+    let newNode = nodes[i1][j1];
+    let prevNode = nodes[i0][j0];
 
     if(newNode[0] !== 1) { // Already visited
       continue;
@@ -263,7 +264,7 @@ function doPrim(i, j) {
     grid[2*i0+y][2*j0+x] = 0;
 
     // Pushes unvisited adjacent nodes into the heap
-    for(t of getValidEdges(i1, j1)) {
+    for(let t of getValidEdges(i1, j1)) {
       pq.push(t);
     }
   }
@@ -391,14 +392,14 @@ function draw() {
     background(100, 0, 0, 100);
     fill("white");
     textAlign(CENTER, CENTER);
-    text("YOU DIED", width/2, height/2)
+    text("YOU DIED", width/2, height/2);
     respawnTimer = millis();
     gameState = "respawning";
   }
   else if(gameState === "respawning") {
     // The player is shown the death screen while the background fades to red
     background(100, 0, 0, 5);
-    text("YOU DIED", width/2, height/2)
+    text("YOU DIED", width/2, height/2);
     if(millis() - respawnTimer >= respawnDuration) {
       level -= 2;
       if(level < -1) {

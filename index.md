@@ -12,6 +12,7 @@
 - [Platformer Demo](08-platformer)
 - [Dog OOP Demo](09-dog)
 - [Walker OOP Demo](10-walker)
+- [Ball OOP](11-ball-oop)
 
 
 ## Projects
