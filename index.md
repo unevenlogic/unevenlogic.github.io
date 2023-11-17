@@ -21,6 +21,7 @@
 - [Interactive Scene](2d-pool-ball)
 - [Array Assignment: 3D n-Body Gravity Simulator](3d-n-body)
 - [2D Array Assignment: Cave Dungeons](cave-dungeons)
+- [Final Project (Collaboration with Alex Ha): Dungeon Exploration](https://darknova2468.github.io/Dungeon-Exploration/)
 
 ## Experiments
 
